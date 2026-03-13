@@ -38,6 +38,6 @@ datasets/irrigated_areas_regridded/*
 *_cache/
 *_files/
 
-# ---- RStudio ----
+# ---- RStudio -----
 .Rproj.user
 

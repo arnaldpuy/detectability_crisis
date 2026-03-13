@@ -32,7 +32,7 @@ We provide all the functions needed to replicate our workflow in the "functions"
 
 #### Generated data
 
-The "datasets" folder contains the data used in this study. 
+The `datasets/irrigated_areas_regridded` folder contains the data used in this study. 
 
 * `irrigated_areas_regridded` folder: It contains the nine maps mentioned above
 harmonized to the following resolutions: 

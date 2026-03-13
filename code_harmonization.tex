@@ -1,0 +1,1055 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+  11pt,
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{5}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage[font=footnotesize]{caption}
+\usepackage{dirtytalk}
+\usepackage{booktabs}
+\usepackage{tabulary}
+\usepackage{enumitem}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage[T1]{fontenc}
+\usepackage{tikz}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Where irrigation exists is globally contested},
+  pdfauthor={Arnald Puy},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Where irrigation exists is globally contested}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{2. Harmonization}
+\author{Arnald Puy}
+\date{}
+
+\begin{document}
+\maketitle
+
+{
+\setcounter{tocdepth}{2}
+\tableofcontents
+}
+\newpage
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# REPROJECTING AND REGRIDDING \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+\DocumentationTok{\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+
+\NormalTok{sensobol}\SpecialCharTok{::}\FunctionTok{load\_packages}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\StringTok{"data.table"}\NormalTok{, }\StringTok{"terra"}\NormalTok{, }\StringTok{"magrittr"}\NormalTok{, }\StringTok{"here"}\NormalTok{, }\StringTok{"rnaturalearth"}\NormalTok{, }
+                          \StringTok{"sf"}\NormalTok{, }\StringTok{"countrycode"}\NormalTok{))}
+
+\CommentTok{\# LOAD ALL DATASETS \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+
+\NormalTok{dt }\OtherTok{\textless{}{-}} \FunctionTok{fread}\NormalTok{(}\StringTok{"./datasets/irrigated\_areas/irrigated\_areas.csv"}\NormalTok{)}
+
+\CommentTok{\# Vector with name of datasets, used to build per{-}dataset rasters and stacks {-}{-}{-}}
+
+\NormalTok{maps }\OtherTok{\textless{}{-}} \FunctionTok{unique}\NormalTok{(dt}\SpecialCharTok{$}\NormalTok{dataset)}
+
+\CommentTok{\# Source all functions needed in the workflow {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{r\_functions }\OtherTok{\textless{}{-}} \FunctionTok{list.files}\NormalTok{(}\AttributeTok{path =} \FunctionTok{here}\NormalTok{(}\StringTok{"functions"}\NormalTok{), }
+                          \AttributeTok{pattern =} \StringTok{"}\SpecialCharTok{\textbackslash{}\textbackslash{}}\StringTok{.R$"}\NormalTok{, }\AttributeTok{full.names =} \ConstantTok{TRUE}\NormalTok{)}
+\FunctionTok{lapply}\NormalTok{(r\_functions, source)}
+
+\CommentTok{\# Load countries as sf (medium scale is a good balance) {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{countries\_sf }\OtherTok{\textless{}{-}} \FunctionTok{ne\_countries}\NormalTok{(}\AttributeTok{scale =} \StringTok{"medium"}\NormalTok{, }\AttributeTok{returnclass =} \StringTok{"sf"}\NormalTok{)}
+
+\CommentTok{\# Keep only what is needed {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{countries\_sf }\OtherTok{\textless{}{-}}\NormalTok{ countries\_sf[, }\FunctionTok{c}\NormalTok{(}\StringTok{"name"}\NormalTok{, }\StringTok{"geometry"}\NormalTok{)]}
+\end{Highlighting}
+\end{Shaded}
+
+\newpage
+
+\section{Harmonization}\label{harmonization}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# MAKE TEMPLATES \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+
+\CommentTok{\# Quick check that dataset totals look plausible and match expectations {-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{dt[, }\FunctionTok{sum}\NormalTok{(mha), dataset] }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{print}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       dataset       V1
+##        <char>    <num>
+##  1:   gaez_v4 287.8335
+##  2:      giam 343.1581
+##  3:      gmia 253.0108
+##  4:     gripc 247.0083
+##  5:      luh2 267.7412
+##  6:     meier 366.2890
+##  7: mirca2000 216.0765
+##  8:  mirca_os 271.3082
+##  9:   nagaraj 297.2691
+## 10:      spam 224.7258
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# In terra, reprojection and aggregation are easier and safer when explicit}
+\CommentTok{\# template rasters defining extent, resolution and CRS are used. {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{template\_ll\_02 }\OtherTok{\textless{}{-}} \FunctionTok{make\_template\_ll}\NormalTok{(}\FloatTok{0.2}\NormalTok{)}
+\NormalTok{template\_ll\_04 }\OtherTok{\textless{}{-}} \FunctionTok{make\_template\_ll}\NormalTok{(}\FloatTok{0.4}\NormalTok{)}
+\NormalTok{template\_ll\_10 }\OtherTok{\textless{}{-}} \FunctionTok{make\_template\_ll}\NormalTok{(}\FloatTok{1.0}\NormalTok{)}
+
+\CommentTok{\# Equal{-}area intermediate template (global Mollweide). {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\CommentTok{\# Mollweide is a global equal{-}area projection suitable }
+\CommentTok{\# for conservation{-}style reprojection steps.}
+
+\NormalTok{crs\_ea }\OtherTok{\textless{}{-}} \StringTok{"+proj=moll +lon\_0=0 +datum=WGS84 +units=m +no\_defs"}
+
+\CommentTok{\# Create an equal{-}area template with fixed world extents and 20 km resolution {-}{-}{-}}
+
+\CommentTok{\# We selexcted this resolution because a fixed global extent avoids shifting bounds}
+\CommentTok{\# 20 km is fine enough to support global reprojection without excessive computation}
+
+\NormalTok{template\_ea }\OtherTok{\textless{}{-}} \FunctionTok{rast}\NormalTok{(}\AttributeTok{xmin =} \SpecialCharTok{{-}}\DecValTok{18000000}\NormalTok{, }\AttributeTok{xmax =} \DecValTok{18000000}\NormalTok{, }\AttributeTok{ymin =}  \SpecialCharTok{{-}}\DecValTok{9000000}\NormalTok{,}
+                    \AttributeTok{ymax =}  \DecValTok{9000000}\NormalTok{, }\AttributeTok{crs  =}\NormalTok{ crs\_ea, }\AttributeTok{resolution =} \DecValTok{20000}\NormalTok{)}
+
+\CommentTok{\# BUILD 0.2º STACK \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+
+\CommentTok{\# We selected 0.2° as a common support to preserve spatial heterogeneity and allow }
+\CommentTok{\# exact aggregation to coarser grids.}
+
+\CommentTok{\# Rasterize each dataset onto the 0.2° grid (area{-}preserving; totals conserved).}
+\CommentTok{\# make\_raster\_ll\_02() implements an area{-}preserving rasterization step. {-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{rast\_ll\_list\_02 }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(maps, make\_raster\_ll\_02)}
+\NormalTok{mha\_stack\_ll\_02 }\OtherTok{\textless{}{-}} \FunctionTok{rast}\NormalTok{(rast\_ll\_list\_02)}
+\FunctionTok{names}\NormalTok{(mha\_stack\_ll\_02) }\OtherTok{\textless{}{-}}\NormalTok{ maps}
+
+\CommentTok{\# Check totals match original (post{-}rasterization) {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\CommentTok{\# To ensure that the initial conversion from table to raster does not change totals.}
+\NormalTok{orig\_totals }\OtherTok{\textless{}{-}}\NormalTok{ dt[, .(}\AttributeTok{total\_mha\_orig =} \FunctionTok{sum}\NormalTok{(mha, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)), dataset]}
+
+\NormalTok{ll02\_totals }\OtherTok{\textless{}{-}} \FunctionTok{data.table}\NormalTok{(}\AttributeTok{dataset =} \FunctionTok{names}\NormalTok{(mha\_stack\_ll\_02),}
+                          \AttributeTok{total\_mha\_ll02 =} \FunctionTok{global}\NormalTok{(mha\_stack\_ll\_02, }\StringTok{"sum"}\NormalTok{, }
+                                                  \AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)[, }\DecValTok{1}\NormalTok{])}
+
+\NormalTok{qa\_ll02 }\OtherTok{\textless{}{-}} \FunctionTok{merge}\NormalTok{(orig\_totals, ll02\_totals, }\AttributeTok{by =} \StringTok{"dataset"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{  .[, ratio\_ll02 }\SpecialCharTok{:=}\NormalTok{ total\_mha\_ll02 }\SpecialCharTok{/}\NormalTok{ total\_mha\_orig] }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{  .[}\FunctionTok{order}\NormalTok{(dataset)]}
+
+\CommentTok{\# Ratio\_ll02 should be 1 for all datasets (or extremely close if floating error).}
+\NormalTok{qa\_ll02}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Key: <dataset>
+##       dataset total_mha_orig total_mha_ll02 ratio_ll02
+##        <char>          <num>          <num>      <num>
+##  1:   gaez_v4       287.8335       287.8335          1
+##  2:      giam       343.1581       343.1581          1
+##  3:      gmia       253.0108       253.0108          1
+##  4:     gripc       247.0083       247.0083          1
+##  5:      luh2       267.7412       267.7412          1
+##  6:     meier       366.2890       366.2890          1
+##  7: mirca2000       216.0765       216.0765          1
+##  8:  mirca_os       271.3082       271.3082          1
+##  9:   nagaraj       297.2691       297.2691          1
+## 10:      spam       224.7258       224.7258          1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Export to .csv {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\FunctionTok{fwrite}\NormalTok{(qa\_ll02, }\StringTok{"./datasets/irrigated\_areas\_regridded/QA\_rasterization\_totals\_ll02.csv"}\NormalTok{)}
+
+\CommentTok{\# FROM AREA TO FRACTION (0.2º LON / LAT) \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+
+\CommentTok{\# We convert to fraction because fractional coverage is bounded [0,1] and can be}
+\CommentTok{\# projected/resampled in a way that is conceptually consistent. It also avoids }
+\CommentTok{\# projecting "areas" directly in a CRS where cell areas vary with latitude.}
+
+\NormalTok{A\_ll02\_ha }\OtherTok{\textless{}{-}} \FunctionTok{cellSize}\NormalTok{(mha\_stack\_ll\_02, }\AttributeTok{unit =} \StringTok{"ha"}\NormalTok{) }\CommentTok{\# cell area in ha}
+\NormalTok{f\_ll02 }\OtherTok{\textless{}{-}}\NormalTok{ (mha\_stack\_ll\_02 }\SpecialCharTok{*} \FloatTok{1e6}\NormalTok{) }\SpecialCharTok{/}\NormalTok{ A\_ll02\_ha }\CommentTok{\# Mha to ha then divide by cell area to fraction}
+
+\CommentTok{\# Clamp to [0,1] to enforce physical constraints of fractional coverage {-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{CLAMP\_TO\_01\_OLD }\OtherTok{\textless{}{-}} \ConstantTok{TRUE}
+\ControlFlowTok{if}\NormalTok{ (CLAMP\_TO\_01\_OLD) f\_ll02 }\OtherTok{\textless{}{-}} \FunctionTok{clamp01}\NormalTok{(f\_ll02)}
+
+
+\CommentTok{\# REPROJECT VIA EQUAL{-}AREA: OPERATOR }\AlertTok{TEST}\CommentTok{ (bilinear vs near) \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+
+\CommentTok{\# Why do we check two operators?}
+\CommentTok{\#   We want to quantify how much smoothing vs non{-}smoothing interpolation changes:}
+\CommentTok{\#   {-} totals (before renormalization)}
+\CommentTok{\#   {-} threshold classification (flip/prevalence)}
+\CommentTok{\#   {-} downstream disagreement curves}
+
+\CommentTok{\# The bilinear operator {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{rt\_old\_bilin }\OtherTok{\textless{}{-}} \FunctionTok{run\_old\_roundtrip}\NormalTok{(}\AttributeTok{f\_ll02 =}\NormalTok{ f\_ll02,}
+                                  \AttributeTok{template\_ea =}\NormalTok{ template\_ea,}
+                                  \AttributeTok{template\_ll\_02 =}\NormalTok{ template\_ll\_02,}
+                                  \AttributeTok{method =} \StringTok{"bilinear"}\NormalTok{,}
+                                  \AttributeTok{clamp\_to\_01 =}\NormalTok{ CLAMP\_TO\_01\_OLD)}
+
+\CommentTok{\# The near operator {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{rt\_old\_near }\OtherTok{\textless{}{-}} \FunctionTok{run\_old\_roundtrip}\NormalTok{(}\AttributeTok{f\_ll02 =}\NormalTok{ f\_ll02,}
+                                 \AttributeTok{template\_ea =}\NormalTok{ template\_ea,}
+                                 \AttributeTok{template\_ll\_02 =}\NormalTok{ template\_ll\_02,}
+                                 \AttributeTok{method =} \StringTok{"near"}\NormalTok{,}
+                                 \AttributeTok{clamp\_to\_01 =}\NormalTok{ CLAMP\_TO\_01\_OLD)}
+
+\NormalTok{mha\_ll02\_target\_bilin }\OtherTok{\textless{}{-}}\NormalTok{ rt\_old\_bilin}\SpecialCharTok{$}\NormalTok{mha}
+\NormalTok{mha\_ll02\_target\_near }\OtherTok{\textless{}{-}}\NormalTok{ rt\_old\_near}\SpecialCharTok{$}\NormalTok{mha}
+
+\CommentTok{\# Quality assessment: total conservation (before renormalization) {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\CommentTok{\# We want to see the raw "mass loss/gain" introduced by the projection pipeline.}
+
+\NormalTok{tot\_before }\OtherTok{\textless{}{-}} \FunctionTok{global}\NormalTok{(mha\_stack\_ll\_02, }\StringTok{"sum"}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)[, }\DecValTok{1}\NormalTok{]}
+\NormalTok{tot\_bilin }\OtherTok{\textless{}{-}} \FunctionTok{global}\NormalTok{(mha\_ll02\_target\_bilin, }\StringTok{"sum"}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)[, }\DecValTok{1}\NormalTok{]}
+\NormalTok{tot\_near }\OtherTok{\textless{}{-}} \FunctionTok{global}\NormalTok{(mha\_ll02\_target\_near,  }\StringTok{"sum"}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)[, }\DecValTok{1}\NormalTok{]}
+
+\NormalTok{tot\_check }\OtherTok{\textless{}{-}} \FunctionTok{data.table}\NormalTok{(}\AttributeTok{dataset =} \FunctionTok{names}\NormalTok{(mha\_stack\_ll\_02),}
+                        \AttributeTok{ratio\_bilin =}\NormalTok{ tot\_bilin }\SpecialCharTok{/}\NormalTok{ tot\_before,}
+                        \AttributeTok{ratio\_near  =}\NormalTok{ tot\_near  }\SpecialCharTok{/}\NormalTok{ tot\_before,}
+                        \AttributeTok{ratio\_near\_to\_bilin =}\NormalTok{ tot\_near }\SpecialCharTok{/}\NormalTok{ tot\_bilin) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{  .[}\FunctionTok{order}\NormalTok{(dataset)]}
+
+\FunctionTok{print}\NormalTok{(tot\_check)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       dataset ratio_bilin ratio_near ratio_near_to_bilin
+##        <char>       <num>      <num>               <num>
+##  1:   gaez_v4   0.9897815  0.9876177           0.9978138
+##  2:      giam   1.0005444  0.9999855           0.9994414
+##  3:      gmia   0.9960749  0.9936816           0.9975973
+##  4:     gripc   0.9926467  0.9921994           0.9995494
+##  5:      luh2   0.9727439  0.9742801           1.0015792
+##  6:     meier   1.0006563  1.0011468           1.0004901
+##  7: mirca2000   1.0000218  0.9981450           0.9981232
+##  8:  mirca_os   0.9875943  0.9854969           0.9978762
+##  9:   nagaraj   1.0024458  0.9992851           0.9968470
+## 10:      spam   0.9953993  0.9938381           0.9984315
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Renormalize both operators to match original totals exactly {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\CommentTok{\# This step makes totals conservation exact and is a protection against}
+\CommentTok{\# the criticism that our reprojection changed totals and this is what}
+\CommentTok{\# explains the disagreement between cells}
+
+\NormalTok{mha\_ll02\_target\_bilin\_cons }\OtherTok{\textless{}{-}} \FunctionTok{renormalize\_to\_totals}\NormalTok{(mha\_ll02\_target\_bilin, mha\_stack\_ll\_02)}
+\NormalTok{mha\_ll02\_target\_near\_cons  }\OtherTok{\textless{}{-}} \FunctionTok{renormalize\_to\_totals}\NormalTok{(mha\_ll02\_target\_near,  mha\_stack\_ll\_02)}
+
+\CommentTok{\# Check exact conservation after renormalization (ratios should be 1) {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{tot\_bilin\_c }\OtherTok{\textless{}{-}} \FunctionTok{global}\NormalTok{(mha\_ll02\_target\_bilin\_cons, }\StringTok{"sum"}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)[, }\DecValTok{1}\NormalTok{]}
+\NormalTok{tot\_near\_c  }\OtherTok{\textless{}{-}} \FunctionTok{global}\NormalTok{(mha\_ll02\_target\_near\_cons,  }\StringTok{"sum"}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)[, }\DecValTok{1}\NormalTok{]}
+
+\NormalTok{qa\_total\_conservation\_after\_renorm }\OtherTok{\textless{}{-}} \FunctionTok{data.table}\NormalTok{(}\AttributeTok{dataset =} \FunctionTok{names}\NormalTok{(mha\_stack\_ll\_02),}
+           \AttributeTok{ratio\_bilin\_cons =}\NormalTok{ tot\_bilin\_c }\SpecialCharTok{/}\NormalTok{ tot\_before,}
+           \AttributeTok{ratio\_near\_cons  =}\NormalTok{ tot\_near\_c  }\SpecialCharTok{/}\NormalTok{ tot\_before) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{        .[}\FunctionTok{order}\NormalTok{(dataset)] }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{print}\NormalTok{(.)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       dataset ratio_bilin_cons ratio_near_cons
+##        <char>            <num>           <num>
+##  1:   gaez_v4                1               1
+##  2:      giam                1               1
+##  3:      gmia                1               1
+##  4:     gripc                1               1
+##  5:      luh2                1               1
+##  6:     meier                1               1
+##  7: mirca2000                1               1
+##  8:  mirca_os                1               1
+##  9:   nagaraj                1               1
+## 10:      spam                1               1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{qa\_total\_conservation\_after\_renorm}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       dataset ratio_bilin_cons ratio_near_cons
+##        <char>            <num>           <num>
+##  1:   gaez_v4                1               1
+##  2:      giam                1               1
+##  3:      gmia                1               1
+##  4:     gripc                1               1
+##  5:      luh2                1               1
+##  6:     meier                1               1
+##  7: mirca2000                1               1
+##  8:  mirca_os                1               1
+##  9:   nagaraj                1               1
+## 10:      spam                1               1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# SELECTION OF THE MAIN HARMONIZED PRODUCT \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+\CommentTok{\# We choose near necause it preserves threshold{-}based presence/absence structure (no}
+\CommentTok{\# smoothing), and our quality assessment shows it minimally changes disagreement }
+\CommentTok{\# curves vs baseline.}
+
+\NormalTok{mha\_ll02\_target }\OtherTok{\textless{}{-}}\NormalTok{ mha\_ll02\_target\_near\_cons }\CommentTok{\# MAIN}
+\NormalTok{mha\_ll02\_target\_sens\_bilin }\OtherTok{\textless{}{-}}\NormalTok{ mha\_ll02\_target\_bilin\_cons }\CommentTok{\# SENSITIVITY}
+
+\CommentTok{\#Quality assessment threshold stability (before vs after) for BOTH operators {-}{-}{-}}
+\CommentTok{\# We quantify whether harmonization changes binary classification at }
+\CommentTok{\# key tau values.}
+
+\NormalTok{tau\_set }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{100}\NormalTok{, }\DecValTok{1000}\NormalTok{)}
+
+\NormalTok{flip\_old\_bilin }\OtherTok{\textless{}{-}} \FunctionTok{tau\_flip\_rates}\NormalTok{(mha\_stack\_ll\_02, }
+\NormalTok{                                 mha\_ll02\_target\_bilin\_cons, }
+                                 \AttributeTok{tau\_ha =}\NormalTok{ tau\_set)}
+
+\NormalTok{prev\_old\_bilin }\OtherTok{\textless{}{-}} \FunctionTok{tau\_prevalence\_change}\NormalTok{(mha\_stack\_ll\_02, }
+\NormalTok{                                        mha\_ll02\_target\_bilin\_cons, }
+                                        \AttributeTok{tau\_ha =}\NormalTok{ tau\_set)}
+
+\NormalTok{flip\_old\_near  }\OtherTok{\textless{}{-}} \FunctionTok{tau\_flip\_rates}\NormalTok{(mha\_stack\_ll\_02, }
+\NormalTok{                                 mha\_ll02\_target\_near\_cons,  }
+                                 \AttributeTok{tau\_ha =}\NormalTok{ tau\_set)}
+
+\NormalTok{prev\_old\_near  }\OtherTok{\textless{}{-}} \FunctionTok{tau\_prevalence\_change}\NormalTok{(mha\_stack\_ll\_02, }
+\NormalTok{                                        mha\_ll02\_target\_near\_cons,  }
+                                        \AttributeTok{tau\_ha =}\NormalTok{ tau\_set)}
+
+\FunctionTok{cat}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{Flip summary (OLD bilinear, conserved):}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Flip summary (OLD bilinear, conserved):
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(}\FunctionTok{flip\_summary}\NormalTok{(flip\_old\_bilin))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##    tau_ha flip_up_median flip_up_min flip_up_max flip_down_median flip_down_min
+##     <num>          <num>       <num>       <num>            <num>         <num>
+## 1:      0    0.051292366 0.036123489  0.05838810      0.000000000  0.000000e+00
+## 2:    100    0.019483329 0.013701970  0.02729641      0.001420646  3.125735e-06
+## 3:   1000    0.007424245 0.005420024  0.01164461      0.001774167  8.983361e-04
+##    flip_down_max
+##            <num>
+## 1:  1.812926e-05
+## 2:  1.609753e-03
+## 3:  2.069236e-03
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{Flip summary (OLD near, conserved):}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Flip summary (OLD near, conserved):
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(}\FunctionTok{flip\_summary}\NormalTok{(flip\_old\_near))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##    tau_ha flip_up_median  flip_up_min flip_up_max flip_down_median
+##     <num>          <num>        <num>       <num>            <num>
+## 1:      0    0.001804799 0.0010489965 0.002240527     0.0018435582
+## 2:    100    0.001603189 0.0010489965 0.001797923     0.0015816217
+## 3:   1000    0.001024303 0.0008752057 0.001170275     0.0009830435
+##    flip_down_min flip_down_max
+##            <num>         <num>
+## 1:  0.0010652503   0.002211770
+## 2:  0.0010652503   0.001740409
+## 3:  0.0008145664   0.001147770
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{Prevalence change (OLD bilinear, conserved):}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Prevalence change (OLD bilinear, conserved):
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(prev\_old\_bilin)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       dataset tau_ha   p_before    p_after       delta
+##        <char>  <num>      <num>      <num>       <num>
+##  1:   gaez_v4      0 0.07292776 0.12265945 0.049731687
+##  2:   gaez_v4    100 0.04775497 0.06560292 0.017847944
+##  3:   gaez_v4   1000 0.02389311 0.02959133 0.005698214
+##  4:      giam      0 0.04081209 0.09901389 0.058201802
+##  5:      giam    100 0.03526641 0.05491791 0.019651493
+##  6:      giam   1000 0.02280036 0.02941066 0.006610303
+##  7:      gmia      0 0.07823026 0.12956670 0.051336439
+##  8:      gmia    100 0.04481303 0.06158760 0.016774567
+##  9:      gmia   1000 0.02268971 0.02808285 0.005393142
+## 10:     gripc      0 0.04187672 0.10024668 0.058369967
+## 11:     gripc    100 0.02949818 0.04168980 0.012191615
+## 12:     gripc   1000 0.01561304 0.01977277 0.004159728
+## 13:      luh2      0 0.01479910 0.05617883 0.041379724
+## 14:      luh2    100 0.01424210 0.04139660 0.027154506
+## 15:      luh2   1000 0.01254232 0.02322296 0.010680635
+## 16:     meier      0 0.05260299 0.10333803 0.050735048
+## 17:     meier    100 0.04777560 0.06771029 0.019934685
+## 18:     meier   1000 0.02904245 0.03522703 0.006184578
+## 19: mirca2000      0 0.07232137 0.12421357 0.051892195
+## 20: mirca2000    100 0.04337582 0.06144319 0.018067371
+## 21: mirca2000   1000 0.02063735 0.02506151 0.004424165
+## 22:  mirca_os      0 0.07562465 0.12687294 0.051248293
+## 23:  mirca_os    100 0.04589579 0.06169200 0.015796212
+## 24:  mirca_os   1000 0.02287162 0.02780904 0.004937410
+## 25:   nagaraj      0 0.03697369 0.07309718 0.036123489
+## 26:   nagaraj    100 0.03697369 0.05851875 0.021545063
+## 27:   nagaraj   1000 0.03083225 0.03747756 0.006645312
+## 28:      spam      0 0.06681570 0.11836594 0.051550239
+## 29:      spam    100 0.03942989 0.05597878 0.016548889
+## 30:      spam   1000 0.01902885 0.02346676 0.004437918
+##       dataset tau_ha   p_before    p_after       delta
+##        <char>  <num>      <num>      <num>       <num>
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{Prevalence change (OLD near, conserved):}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+## Prevalence change (OLD near, conserved):
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{print}\NormalTok{(prev\_old\_near)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##       dataset tau_ha   p_before    p_after         delta
+##        <char>  <num>      <num>      <num>         <num>
+##  1:   gaez_v4      0 0.07292776 0.07287338 -5.438778e-05
+##  2:   gaez_v4    100 0.04775497 0.04781249  5.751352e-05
+##  3:   gaez_v4   1000 0.02389311 0.02400189  1.087756e-04
+##  4:      giam      0 0.04081209 0.04087961  6.751587e-05
+##  5:      giam    100 0.03526641 0.03532080  5.438778e-05
+##  6:      giam   1000 0.02280036 0.02282599  2.563102e-05
+##  7:      gmia      0 0.07823026 0.07820213 -2.813161e-05
+##  8:      gmia    100 0.04481303 0.04479928 -1.375323e-05
+##  9:      gmia   1000 0.02268971 0.02275097  6.126440e-05
+## 10:     gripc      0 0.04187672 0.04190547  2.875676e-05
+## 11:     gripc    100 0.02949818 0.02949006 -8.126910e-06
+## 12:     gripc   1000 0.01561304 0.01573807  1.250294e-04
+## 13:      luh2      0 0.01479910 0.01480473  5.626322e-06
+## 14:      luh2    100 0.01424210 0.01423084 -1.125264e-05
+## 15:      luh2   1000 0.01254232 0.01256170  1.937955e-05
+## 16:     meier      0 0.05260299 0.05258673 -1.625382e-05
+## 17:     meier    100 0.04777560 0.04777373 -1.875441e-06
+## 18:     meier   1000 0.02904245 0.02902745 -1.500353e-05
+## 19: mirca2000      0 0.07232137 0.07232262  1.250294e-06
+## 20: mirca2000    100 0.04337582 0.04336207 -1.375323e-05
+## 21: mirca2000   1000 0.02063735 0.02064485  7.501763e-06
+## 22:  mirca_os      0 0.07562465 0.07558464 -4.000940e-05
+## 23:  mirca_os    100 0.04589579 0.04603457  1.387826e-04
+## 24:  mirca_os   1000 0.02287162 0.02306730  1.956710e-04
+## 25:   nagaraj      0 0.03697369 0.03695743 -1.625382e-05
+## 26:   nagaraj    100 0.03697369 0.03695743 -1.625382e-05
+## 27:   nagaraj   1000 0.03083225 0.03079286 -3.938426e-05
+## 28:      spam      0 0.06681570 0.06677382 -4.188484e-05
+## 29:      spam    100 0.03942989 0.03947053  4.063455e-05
+## 30:      spam   1000 0.01902885 0.01908261  5.376263e-05
+##       dataset tau_ha   p_before    p_after         delta
+##        <char>  <num>      <num>      <num>         <num>
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# SAVE QUALITY ASSESSMENT OUTPUTS FOR SUPPLEMENTARY MATERIALS \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+
+\CommentTok{\# These tables are evidence that harmonization does not bias results {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\FunctionTok{fwrite}\NormalTok{(}
+\NormalTok{  qa\_total\_conservation\_after\_renorm,}
+  \StringTok{"./datasets/irrigated\_areas\_regridded/QA\_total\_conservation\_after\_renormalization.csv"}
+\NormalTok{)}
+
+\FunctionTok{fwrite}\NormalTok{(flip\_old\_bilin, }\StringTok{"./datasets/irrigated\_areas\_regridded/QA\_flip\_rates\_old\_bilinear.csv"}\NormalTok{)}
+\FunctionTok{fwrite}\NormalTok{(prev\_old\_bilin, }\StringTok{"./datasets/irrigated\_areas\_regridded/QA\_prevalence\_change\_old\_bilinear.csv"}\NormalTok{)}
+\FunctionTok{fwrite}\NormalTok{(flip\_old\_near,  }\StringTok{"./datasets/irrigated\_areas\_regridded/QA\_flip\_rates\_old\_near.csv"}\NormalTok{)}
+\FunctionTok{fwrite}\NormalTok{(prev\_old\_near,  }\StringTok{"./datasets/irrigated\_areas\_regridded/QA\_prevalence\_change\_old\_near.csv"}\NormalTok{)}
+
+\CommentTok{\# Sanity check to guarantee that the output is actually on the intended grid }
+\CommentTok{\# for downstream analysis {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\FunctionTok{res}\NormalTok{(mha\_ll02\_target)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.2 0.2
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Verify totals after full round{-}trip vs ORIGINAL dt totals {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\CommentTok{\# Another reviewer{-}proof check: final harmonized rasters still match }
+\CommentTok{\# original totals.}
+
+\NormalTok{ll02\_target\_totals }\OtherTok{\textless{}{-}} \FunctionTok{data.table}\NormalTok{(}\AttributeTok{dataset =} \FunctionTok{names}\NormalTok{(mha\_ll02\_target),}
+                                 \AttributeTok{total\_mha\_ll02\_target =} \FunctionTok{global}\NormalTok{(mha\_ll02\_target, }
+                                                                \StringTok{"sum"}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)[, }\DecValTok{1}\NormalTok{])}
+
+\NormalTok{check\_02 }\OtherTok{\textless{}{-}} \FunctionTok{merge}\NormalTok{(orig\_totals, ll02\_target\_totals, }\AttributeTok{by =} \StringTok{"dataset"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{  .[, ratio }\SpecialCharTok{:=}\NormalTok{ total\_mha\_ll02\_target }\SpecialCharTok{/}\NormalTok{ total\_mha\_orig] }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{  .[}\FunctionTok{order}\NormalTok{(dataset)]}
+
+\FunctionTok{print}\NormalTok{(check\_02)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Key: <dataset>
+##       dataset total_mha_orig total_mha_ll02_target ratio
+##        <char>          <num>                 <num> <num>
+##  1:   gaez_v4       287.8335              287.8335     1
+##  2:      giam       343.1581              343.1581     1
+##  3:      gmia       253.0108              253.0108     1
+##  4:     gripc       247.0083              247.0083     1
+##  5:      luh2       267.7412              267.7412     1
+##  6:     meier       366.2890              366.2890     1
+##  7: mirca2000       216.0765              216.0765     1
+##  8:  mirca_os       271.3082              271.3082     1
+##  9:   nagaraj       297.2691              297.2691     1
+## 10:      spam       224.7258              224.7258     1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# SAVE THE ALIGNED 0.2º STACK \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+
+\CommentTok{\# We savethe harmonized multi{-}layer raster for reproducibility and reuse.}
+
+\FunctionTok{writeRaster}\NormalTok{(mha\_ll02\_target, }\AttributeTok{filename =} \StringTok{"mha\_stack\_ll\_02\_aligned\_NEAR.tif"}\NormalTok{,}
+            \AttributeTok{overwrite =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{gdal =} \FunctionTok{c}\NormalTok{(}\StringTok{"COMPRESS=LZW"}\NormalTok{))}
+
+\CommentTok{\# SAVE THE OTHER RASTERS AS WELL \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+
+\FunctionTok{writeRaster}\NormalTok{(mha\_stack\_ll\_02, }\StringTok{"mha\_stack\_ll\_02\_baseline.tif"}\NormalTok{, }\AttributeTok{overwrite=}\ConstantTok{TRUE}\NormalTok{, }\AttributeTok{gdal=}\StringTok{"COMPRESS=LZW"}\NormalTok{)}
+
+\FunctionTok{writeRaster}\NormalTok{(mha\_ll02\_target\_bilin\_cons, }\StringTok{"mha\_stack\_ll\_02\_aligned\_BILIN.tif"}\NormalTok{, }\AttributeTok{overwrite=}\ConstantTok{TRUE}\NormalTok{, }\AttributeTok{gdal=}\StringTok{"COMPRESS=LZW"}\NormalTok{)}
+
+\CommentTok{\# Export 0.2° long table {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{irrigated\_areas\_regridded\_02 }\OtherTok{\textless{}{-}} \FunctionTok{as.data.table}\NormalTok{(}
+  \FunctionTok{as.data.frame}\NormalTok{(mha\_ll02\_target, }\AttributeTok{xy =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{FALSE}\NormalTok{))}
+
+\NormalTok{irrigated\_areas\_regridded\_02 }\OtherTok{\textless{}{-}} \FunctionTok{melt}\NormalTok{(irrigated\_areas\_regridded\_02,}
+                                     \AttributeTok{id.vars =} \FunctionTok{c}\NormalTok{(}\StringTok{"x"}\NormalTok{, }\StringTok{"y"}\NormalTok{),}
+                                     \AttributeTok{variable.name =} \StringTok{"dataset"}\NormalTok{,}
+                                     \AttributeTok{value.name =} \StringTok{"mha"}\NormalTok{,}
+                                     \AttributeTok{variable.factor =} \ConstantTok{FALSE}\NormalTok{)}
+
+\FunctionTok{setnames}\NormalTok{(irrigated\_areas\_regridded\_02, }\FunctionTok{c}\NormalTok{(}\StringTok{"x"}\NormalTok{, }\StringTok{"y"}\NormalTok{), }\FunctionTok{c}\NormalTok{(}\StringTok{"lon"}\NormalTok{, }\StringTok{"lat"}\NormalTok{))}
+
+
+\CommentTok{\# AGGREGATE TO 0.4° \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+
+\CommentTok{\# Spatial aggregation is a conservative robustness test: it reduces fine{-}scale}
+\CommentTok{\# misalignment/noise so disagreement persisting at coarser scales is }
+\CommentTok{\# harder to dismiss. fact=2 maps 0.2° to 0.4°; summing preserves total irrigated area.}
+
+\NormalTok{mha\_stack\_ll\_04 }\OtherTok{\textless{}{-}} \FunctionTok{aggregate}\NormalTok{(mha\_ll02\_target, }\AttributeTok{fact =} \DecValTok{2}\NormalTok{, }\AttributeTok{fun =}\NormalTok{ sum, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)}
+\FunctionTok{res}\NormalTok{(mha\_stack\_ll\_04)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.4 0.4
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Check totals preserved under aggregation {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{orig\_totals\_stack }\OtherTok{\textless{}{-}} \FunctionTok{global}\NormalTok{(mha\_ll02\_target, }\StringTok{"sum"}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)[, }\DecValTok{1}\NormalTok{]}
+\NormalTok{agg04\_totals }\OtherTok{\textless{}{-}} \FunctionTok{global}\NormalTok{(mha\_stack\_ll\_04, }\StringTok{"sum"}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)[, }\DecValTok{1}\NormalTok{]}
+\NormalTok{qa\_04 }\OtherTok{\textless{}{-}} \FunctionTok{data.table}\NormalTok{(}\AttributeTok{dataset =} \FunctionTok{names}\NormalTok{(mha\_ll02\_target),}
+                    \AttributeTok{ratio =}\NormalTok{ agg04\_totals }\SpecialCharTok{/}\NormalTok{ orig\_totals\_stack)}
+
+\CommentTok{\# Export assessment {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\FunctionTok{fwrite}\NormalTok{(qa\_04,}
+       \StringTok{"./datasets/irrigated\_areas\_regridded/QA\_aggregation\_totals\_04deg.csv"}\NormalTok{)}
+
+\CommentTok{\# Export 0.4° long table {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{irrigated\_areas\_regridded\_04 }\OtherTok{\textless{}{-}} \FunctionTok{as.data.table}\NormalTok{(}
+  \FunctionTok{as.data.frame}\NormalTok{(mha\_stack\_ll\_04, }\AttributeTok{xy =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{FALSE}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{melt}\NormalTok{(}\AttributeTok{id.vars =} \FunctionTok{c}\NormalTok{(}\StringTok{"x"}\NormalTok{, }\StringTok{"y"}\NormalTok{), }\AttributeTok{variable.name =} \StringTok{"dataset"}\NormalTok{, }\AttributeTok{value.name =} \StringTok{"mha"}\NormalTok{,}
+       \AttributeTok{variable.factor =} \ConstantTok{FALSE}\NormalTok{)}
+
+\FunctionTok{setnames}\NormalTok{(irrigated\_areas\_regridded\_04, }\FunctionTok{c}\NormalTok{(}\StringTok{"x"}\NormalTok{, }\StringTok{"y"}\NormalTok{), }\FunctionTok{c}\NormalTok{(}\StringTok{"lon"}\NormalTok{, }\StringTok{"lat"}\NormalTok{))}
+
+\CommentTok{\# AGGREGATE TO 1° \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+
+\CommentTok{\# Even stronger conservative scale; if disagreement persists at 1°, it is not a}
+\CommentTok{\# fine{-}resolution alignment artefact. fact=5 maps 0.2° to 1°.}
+
+\NormalTok{mha\_stack\_ll\_10 }\OtherTok{\textless{}{-}} \FunctionTok{aggregate}\NormalTok{(mha\_ll02\_target, }\AttributeTok{fact =} \DecValTok{5}\NormalTok{, }\AttributeTok{fun =}\NormalTok{ sum, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)}
+\FunctionTok{res}\NormalTok{(mha\_stack\_ll\_10)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1 1
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Check totals preserved under aggregation {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{agg10\_totals }\OtherTok{\textless{}{-}} \FunctionTok{global}\NormalTok{(mha\_stack\_ll\_10, }\StringTok{"sum"}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)[, }\DecValTok{1}\NormalTok{]}
+\NormalTok{qa\_10 }\OtherTok{\textless{}{-}} \FunctionTok{data.table}\NormalTok{(}\AttributeTok{dataset =} \FunctionTok{names}\NormalTok{(mha\_ll02\_target),}
+                    \AttributeTok{ratio =}\NormalTok{ agg10\_totals }\SpecialCharTok{/}\NormalTok{ orig\_totals\_stack)}
+
+\CommentTok{\# Export quality assessment {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\FunctionTok{fwrite}\NormalTok{(qa\_10, }\StringTok{"./datasets/irrigated\_areas\_regridded/QA\_aggregation\_totals\_10deg.csv"}\NormalTok{)}
+
+\CommentTok{\# Export 1° long table {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{irrigated\_areas\_regridded\_10 }\OtherTok{\textless{}{-}} \FunctionTok{as.data.table}\NormalTok{(}
+  \FunctionTok{as.data.frame}\NormalTok{(mha\_stack\_ll\_10, }\AttributeTok{xy =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{na.rm =} \ConstantTok{FALSE}\NormalTok{)) }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{melt}\NormalTok{(}\AttributeTok{id.vars =} \FunctionTok{c}\NormalTok{(}\StringTok{"x"}\NormalTok{, }\StringTok{"y"}\NormalTok{), }\AttributeTok{variable.name =} \StringTok{"dataset"}\NormalTok{, }\AttributeTok{value.name =} \StringTok{"mha"}\NormalTok{,}
+       \AttributeTok{variable.factor =} \ConstantTok{FALSE}\NormalTok{)}
+
+\FunctionTok{setnames}\NormalTok{(irrigated\_areas\_regridded\_10, }\FunctionTok{c}\NormalTok{(}\StringTok{"x"}\NormalTok{, }\StringTok{"y"}\NormalTok{), }\FunctionTok{c}\NormalTok{(}\StringTok{"lon"}\NormalTok{, }\StringTok{"lat"}\NormalTok{))}
+
+\CommentTok{\# ADD COUNTRIES + CONTINENT AND EXPORT \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+\CommentTok{\# This step enables regional summaries and continent/country decomposition of }
+\CommentTok{\# disagreement. drop\_all\_zero\_or\_na\_cells() reduces file size and speeds }
+\CommentTok{\# later computations by removing cells that contain no irrigation in all datasets.}
+
+\CommentTok{\# 0.2° {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{irrigated\_areas\_regridded\_02 }\OtherTok{\textless{}{-}} \FunctionTok{add\_admin}\NormalTok{(irrigated\_areas\_regridded\_02)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: Some values were not matched unambiguously: Fr. Polynesia, Fr. S. Antarctic Lands, Indian Ocean Ter., Kosovo, Micronesia, S. Geo. and the Is., S. Sudan, Siachen Glacier, Somaliland, Taiwan, W. Sahara
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Some values were not matched unambiguously: Fr. Polynesia, Fr. S. Antarctic Lands, Heard I. and McDonald Is., Indian Ocean Ter., Kosovo, Micronesia, S. Geo. and the Is., S. Sudan, Siachen Glacier, W. Sahara
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{irrigated\_areas\_regridded\_02 }\OtherTok{\textless{}{-}} \FunctionTok{drop\_all\_zero\_or\_na\_cells}\NormalTok{(irrigated\_areas\_regridded\_02)}
+
+\CommentTok{\# Final total check after dropping cells {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\CommentTok{\# Even after dropping "all{-}zero" rows, dataset totals should remain unchanged.}
+
+\FunctionTok{merge}\NormalTok{(irrigated\_areas\_regridded\_02[, .(}\AttributeTok{current =} \FunctionTok{sum}\NormalTok{(mha, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)), dataset],}
+\NormalTok{      orig\_totals, }\AttributeTok{by =} \StringTok{"dataset"}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{  .[, fraction }\SpecialCharTok{:=}\NormalTok{ current }\SpecialCharTok{/}\NormalTok{ total\_mha\_orig] }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{  .[}\FunctionTok{order}\NormalTok{(dataset)] }\SpecialCharTok{\%\textgreater{}\%}
+  \FunctionTok{print}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Key: <dataset>
+##       dataset  current total_mha_orig  fraction
+##        <char>    <num>          <num>     <num>
+##  1:   gaez_v4 285.5135       287.8335 0.9919400
+##  2:      giam 339.7342       343.1581 0.9900224
+##  3:      gmia 249.8387       253.0108 0.9874624
+##  4:     gripc 244.6092       247.0083 0.9902873
+##  5:      luh2 265.5824       267.7412 0.9919371
+##  6:     meier 362.3263       366.2890 0.9891815
+##  7: mirca2000 213.6309       216.0765 0.9886819
+##  8:  mirca_os 268.6011       271.3082 0.9900221
+##  9:   nagaraj 293.5383       297.2691 0.9874498
+## 10:      spam 222.3060       224.7258 0.9892322
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Export 0.2º file {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\FunctionTok{fwrite}\NormalTok{(irrigated\_areas\_regridded\_02,}
+       \StringTok{"./datasets/irrigated\_areas\_regridded/irrigated\_areas\_regridded\_02.csv"}\NormalTok{)}
+
+\CommentTok{\# 0.4° {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{irrigated\_areas\_regridded\_04 }\OtherTok{\textless{}{-}} \FunctionTok{add\_admin}\NormalTok{(irrigated\_areas\_regridded\_04)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: Some values were not matched unambiguously: Fr. Polynesia, Fr. S. Antarctic Lands, Kosovo, S. Geo. and the Is., S. Sudan, Siachen Glacier, Somaliland, Taiwan, W. Sahara
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Some values were not matched unambiguously: Fr. Polynesia, Fr. S. Antarctic Lands, Kosovo, S. Geo. and the Is., S. Sudan, Siachen Glacier, W. Sahara
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{irrigated\_areas\_regridded\_04 }\OtherTok{\textless{}{-}} \FunctionTok{drop\_all\_zero\_or\_na\_cells}\NormalTok{(irrigated\_areas\_regridded\_04)}
+
+\FunctionTok{fwrite}\NormalTok{(irrigated\_areas\_regridded\_04,}
+       \StringTok{"./datasets/irrigated\_areas\_regridded/irrigated\_areas\_regridded\_04.csv"}\NormalTok{)}
+
+\CommentTok{\# 1° {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\NormalTok{irrigated\_areas\_regridded\_10 }\OtherTok{\textless{}{-}} \FunctionTok{add\_admin}\NormalTok{(irrigated\_areas\_regridded\_10)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning: Some values were not matched unambiguously: Fr. Polynesia, Fr. S. Antarctic Lands, Kosovo, S. Geo. and the Is., S. Sudan, Somaliland, Taiwan, W. Sahara
+\end{verbatim}
+
+\begin{verbatim}
+## Warning: Some values were not matched unambiguously: Fr. Polynesia, Fr. S. Antarctic Lands, Kosovo, S. Geo. and the Is., S. Sudan, W. Sahara
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{irrigated\_areas\_regridded\_10 }\OtherTok{\textless{}{-}} \FunctionTok{drop\_all\_zero\_or\_na\_cells}\NormalTok{(irrigated\_areas\_regridded\_10)}
+
+\FunctionTok{fwrite}\NormalTok{(irrigated\_areas\_regridded\_10,}
+       \StringTok{"./datasets/irrigated\_areas\_regridded/irrigated\_areas\_regridded\_10.csv"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\newpage
+
+\subsection{Does harmonization change the disagreement
+curves?}\label{does-harmonization-change-the-disagreement-curves}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# DOES HARMONIZATION CHANGE THE DISAGREEMENT CURVES? \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+\CommentTok{\#}
+\CommentTok{\# The main results of the paper are disagreement curves: the fraction of grid}
+\CommentTok{\# cells that disagree on irrigation presence as a function of the detectability}
+\CommentTok{\# threshold tau, together with their decomposition into existential vs marginal,}
+\CommentTok{\# minor vs major disagreement, etc.}
+\CommentTok{\#}
+\CommentTok{\# Even if we have shown that:}
+\CommentTok{\#   {-} global irrigated{-}area totals are conserved, and}
+\CommentTok{\#   {-} irrigation prevalence is stable under nearest{-}neighbour reprojection,}
+\CommentTok{\# this does not automatically guarantee that the shape of the disagreement}
+\CommentTok{\# curves is unaffected by harmonization.}
+\CommentTok{\#}
+\CommentTok{\# In this QA we therefore explicitly test whether the harmonization step}
+\CommentTok{\# (reprojection + resampling) biases disagreement metrics across tau by:}
+\CommentTok{\#   1) computing disagreement curves on:}
+\CommentTok{\#        (a) the baseline aligned 0.2° stack (mha\_stack\_ll\_02),}
+\CommentTok{\#       (b) the nearest{-}neighbour round{-}trip, renormalized (mha\_ll02\_target\_near\_cons),}
+\CommentTok{\#      (c) the bilinear round{-}trip, renormalized (mha\_ll02\_target\_bilin\_cons);}
+\CommentTok{\#   2) comparing curves (b) and (c) against the baseline across the full tau grid;}
+\CommentTok{\#   3) summarizing for each key metric the maximum absolute change across tau.}
+\CommentTok{\#}
+\CommentTok{\# If near\_minus\_base deltas are c. 0 for all tau, harmonization does not distort}
+\CommentTok{\# disagreement results. If bilin\_minus\_base deltas are large at low tau, this}
+\CommentTok{\# indicates that bilinear smoothing inflates the spatial footprint of small}
+\CommentTok{\# irrigation signals and artificially increases disagreement near the detection}
+\CommentTok{\# limit.}
+
+\CommentTok{\# DEFINE THE SAME TAU GRID USED IN THE ANALYSIS \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+
+\CommentTok{\# Define a dense grid of tau values (in ha) from 1 ha (10\^{}0) to 1e5 ha (10\^{}5),}
+\CommentTok{\# on a log10 scale with step 0.1. tau = 0 (label "any\_positive") is added to}
+\CommentTok{\# represent the "any non{-}zero irrigation" case used in the main analysis.}
+
+\NormalTok{log\_tau\_min }\OtherTok{\textless{}{-}} \DecValTok{0}
+\NormalTok{log\_tau\_max }\OtherTok{\textless{}{-}} \DecValTok{5}
+\NormalTok{log\_step }\OtherTok{\textless{}{-}} \FloatTok{0.1}
+
+\NormalTok{taus\_ha\_nonzero }\OtherTok{\textless{}{-}} \DecValTok{10}\SpecialCharTok{\^{}}\NormalTok{(}\FunctionTok{seq}\NormalTok{(log\_tau\_min, log\_tau\_max, }\AttributeTok{by =}\NormalTok{ log\_step))}
+\NormalTok{taus\_ha }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, taus\_ha\_nonzero)}
+\NormalTok{taus\_mha }\OtherTok{\textless{}{-}}\NormalTok{ taus\_ha }\SpecialCharTok{*} \FloatTok{1e{-}6}
+
+\CommentTok{\# Labels: "any\_positive" for tau = 0, then e.g. "1ha", "1.26ha", ..., "100000ha"}
+\NormalTok{tau\_labels }\OtherTok{\textless{}{-}} \FunctionTok{ifelse}\NormalTok{(taus\_ha }\SpecialCharTok{==} \DecValTok{0}\NormalTok{, }\StringTok{"any\_positive"}\NormalTok{,}
+                     \FunctionTok{sprintf}\NormalTok{(}\StringTok{"\%gha"}\NormalTok{, }\FunctionTok{signif}\NormalTok{(taus\_ha, }\DecValTok{3}\NormalTok{)))}
+
+\NormalTok{tau\_grid }\OtherTok{\textless{}{-}} \FunctionTok{data.table}\NormalTok{(}\AttributeTok{tau\_label =}\NormalTok{ tau\_labels,}
+                       \AttributeTok{tau\_ha =}\NormalTok{ taus\_ha,}
+                       \AttributeTok{tau\_mha =}\NormalTok{ taus\_mha)}
+
+\CommentTok{\# RELOAD PRODUCTS FOR THE QUALITY CHECK \#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#\#}
+
+\CommentTok{\# Reload from disk to avoid invalid external pointers during knitting.}
+
+\NormalTok{mha\_stack\_ll\_02 }\OtherTok{\textless{}{-}} \FunctionTok{rast}\NormalTok{(}\StringTok{"mha\_stack\_ll\_02\_baseline.tif"}\NormalTok{)}
+\NormalTok{mha\_ll02\_target\_near\_cons }\OtherTok{\textless{}{-}} \FunctionTok{rast}\NormalTok{(}\StringTok{"mha\_stack\_ll\_02\_aligned\_NEAR.tif"}\NormalTok{)}
+\NormalTok{mha\_ll02\_target\_bilin\_cons }\OtherTok{\textless{}{-}} \FunctionTok{rast}\NormalTok{(}\StringTok{"mha\_stack\_ll\_02\_aligned\_BILIN.tif"}\NormalTok{)}
+
+\CommentTok{\# Build disagreement curves for each product {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\CommentTok{\# compute\_curve\_from\_stack() applies the tau{-}based classification and disagreement}
+\CommentTok{\# metrics used in the main analysis, returning e.g. frac\_disagree(tau), etc.}
+
+\NormalTok{curve\_base }\OtherTok{\textless{}{-}} \FunctionTok{compute\_curve\_from\_stack}\NormalTok{(mha\_stack\_ll\_02, tau\_grid) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{  .[, product}\SpecialCharTok{:=} \StringTok{"base\_ll02"}\NormalTok{]}
+
+\NormalTok{curve\_near }\OtherTok{\textless{}{-}} \FunctionTok{compute\_curve\_from\_stack}\NormalTok{(mha\_ll02\_target\_near\_cons, tau\_grid) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{  .[, product}\SpecialCharTok{:=} \StringTok{"rt\_near\_cons"}\NormalTok{]}
+
+\NormalTok{curve\_bilin }\OtherTok{\textless{}{-}} \FunctionTok{compute\_curve\_from\_stack}\NormalTok{(mha\_ll02\_target\_bilin\_cons, tau\_grid) }\SpecialCharTok{\%\textgreater{}\%}
+\NormalTok{  .[, product}\SpecialCharTok{:=} \StringTok{"rt\_bilin\_cons"}\NormalTok{]}
+
+\NormalTok{curves }\OtherTok{\textless{}{-}} \FunctionTok{rbindlist}\NormalTok{(}\FunctionTok{list}\NormalTok{(curve\_base, curve\_near, curve\_bilin), }\AttributeTok{use.names =} \ConstantTok{TRUE}\NormalTok{)}
+\FunctionTok{setorder}\NormalTok{(curves, product, tau\_mha)}
+
+\CommentTok{\# Compute deltas vs baseline for key metrics {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\CommentTok{\# For each tau and metric, we compute:}
+\CommentTok{\#   $\textbackslash{}Delta$\_near(tau)  = metric\_near(tau)  {-} metric\_base(tau)}
+\CommentTok{\#   $\textbackslash{}Delta$\_bilin(tau) = metric\_bilin(tau) {-} metric\_base(tau)}
+\CommentTok{\# A robust harmonization should give $\textbackslash{}Delta$\_near(tau) = 0 for all tau.}
+
+\NormalTok{metrics }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"frac\_disagree"}\NormalTok{, }\StringTok{"frac\_existence"}\NormalTok{, }\StringTok{"frac\_marginal"}\NormalTok{,}
+             \StringTok{"frac\_minor\_disagree"}\NormalTok{, }\StringTok{"frac\_major\_disagree"}\NormalTok{,}
+             \StringTok{"share\_existence"}\NormalTok{, }\StringTok{"share\_marginal"}\NormalTok{)}
+
+\NormalTok{base\_keep }\OtherTok{\textless{}{-}}\NormalTok{ curve\_base[, }\FunctionTok{c}\NormalTok{(}\StringTok{"tau\_label"}\NormalTok{, }\StringTok{"tau\_ha"}\NormalTok{, }\StringTok{"tau\_mha"}\NormalTok{, metrics), with }\OtherTok{=} \ConstantTok{FALSE}\NormalTok{]}
+
+\NormalTok{delta\_near }\OtherTok{\textless{}{-}} \FunctionTok{merge}\NormalTok{(}
+\NormalTok{  curve\_near[, }\FunctionTok{c}\NormalTok{(}\StringTok{"tau\_label"}\NormalTok{, }\StringTok{"tau\_ha"}\NormalTok{, }\StringTok{"tau\_mha"}\NormalTok{, metrics), }\AttributeTok{with =} \ConstantTok{FALSE}\NormalTok{],}
+\NormalTok{  base\_keep,}
+  \AttributeTok{by =} \FunctionTok{c}\NormalTok{(}\StringTok{"tau\_label"}\NormalTok{, }\StringTok{"tau\_ha"}\NormalTok{, }\StringTok{"tau\_mha"}\NormalTok{),}
+  \AttributeTok{suffixes =} \FunctionTok{c}\NormalTok{(}\StringTok{"\_near"}\NormalTok{, }\StringTok{"\_base"}\NormalTok{))}
+
+\NormalTok{delta\_bilin }\OtherTok{\textless{}{-}} \FunctionTok{merge}\NormalTok{(}
+\NormalTok{  curve\_bilin[, }\FunctionTok{c}\NormalTok{(}\StringTok{"tau\_label"}\NormalTok{, }\StringTok{"tau\_ha"}\NormalTok{, }\StringTok{"tau\_mha"}\NormalTok{, metrics), }\AttributeTok{with =} \ConstantTok{FALSE}\NormalTok{],}
+\NormalTok{  base\_keep,}
+  \AttributeTok{by =} \FunctionTok{c}\NormalTok{(}\StringTok{"tau\_label"}\NormalTok{, }\StringTok{"tau\_ha"}\NormalTok{, }\StringTok{"tau\_mha"}\NormalTok{),}
+  \AttributeTok{suffixes =} \FunctionTok{c}\NormalTok{(}\StringTok{"\_bilin"}\NormalTok{, }\StringTok{"\_base"}\NormalTok{))}
+
+\CommentTok{\# Convert to delta columns (harmonized {-} baseline) {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\ControlFlowTok{for}\NormalTok{ (m }\ControlFlowTok{in}\NormalTok{ metrics) \{}
+\NormalTok{  delta\_near[, (m)}\SpecialCharTok{:=} \FunctionTok{get}\NormalTok{(}\FunctionTok{paste0}\NormalTok{(m, }\StringTok{"\_near"}\NormalTok{)) }\SpecialCharTok{{-}} \FunctionTok{get}\NormalTok{(}\FunctionTok{paste0}\NormalTok{(m, }\StringTok{"\_base"}\NormalTok{)) ]}
+\NormalTok{  delta\_bilin[, (m)}\SpecialCharTok{:=} \FunctionTok{get}\NormalTok{(}\FunctionTok{paste0}\NormalTok{(m, }\StringTok{"\_bilin"}\NormalTok{)) }\SpecialCharTok{{-}} \FunctionTok{get}\NormalTok{(}\FunctionTok{paste0}\NormalTok{(m, }\StringTok{"\_base"}\NormalTok{)) ]}
+\NormalTok{\}}
+
+\NormalTok{delta\_near[, comparison}\SpecialCharTok{:=} \StringTok{"near\_minus\_base"}\NormalTok{]}
+\NormalTok{delta\_bilin[, comparison}\SpecialCharTok{:=} \StringTok{"bilin\_minus\_base"}\NormalTok{]}
+
+\NormalTok{delta\_all }\OtherTok{\textless{}{-}} \FunctionTok{rbindlist}\NormalTok{(}\FunctionTok{list}\NormalTok{(delta\_near, delta\_bilin), }\AttributeTok{use.names =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{fill =} \ConstantTok{TRUE}\NormalTok{)}
+
+\CommentTok{\# Summarize worst{-}case changes across tau for headline metrics {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+\CommentTok{\# For the key metrics (frac\_disagree, frac\_existence, frac\_marginal), we}
+\CommentTok{\# extract, for each comparison, the tau at which |$\textbackslash{}Delta$(tau)| is largest and the}
+\CommentTok{\# corresponding $\textbackslash{}Delta$(tau). This yields a compact "worst{-}case impact" summary.}
+
+\NormalTok{summary\_near }\OtherTok{\textless{}{-}} \FunctionTok{rbindlist}\NormalTok{(}\FunctionTok{lapply}\NormalTok{(}
+  \FunctionTok{c}\NormalTok{(}\StringTok{"frac\_disagree"}\NormalTok{, }\StringTok{"frac\_existence"}\NormalTok{, }\StringTok{"frac\_marginal"}\NormalTok{),}
+  \ControlFlowTok{function}\NormalTok{(m) }\FunctionTok{summarize\_delta}\NormalTok{(delta\_near, m)}
+\NormalTok{))[, comparison}\SpecialCharTok{:=} \StringTok{"near\_minus\_base"}\NormalTok{]}
+
+\NormalTok{summary\_bilin }\OtherTok{\textless{}{-}} \FunctionTok{rbindlist}\NormalTok{(}\FunctionTok{lapply}\NormalTok{(}
+  \FunctionTok{c}\NormalTok{(}\StringTok{"frac\_disagree"}\NormalTok{, }\StringTok{"frac\_existence"}\NormalTok{, }\StringTok{"frac\_marginal"}\NormalTok{),}
+  \ControlFlowTok{function}\NormalTok{(m) }\FunctionTok{summarize\_delta}\NormalTok{(delta\_bilin, m)}
+\NormalTok{))[, comparison}\SpecialCharTok{:=} \StringTok{"bilin\_minus\_base"}\NormalTok{]}
+
+\NormalTok{delta\_summary }\OtherTok{\textless{}{-}} \FunctionTok{rbindlist}\NormalTok{(}\FunctionTok{list}\NormalTok{(summary\_near, summary\_bilin), }\AttributeTok{use.names =} \ConstantTok{TRUE}\NormalTok{)}
+\FunctionTok{setorder}\NormalTok{(delta\_summary, comparison, metric)}
+
+\CommentTok{\# Interpretation:}
+\CommentTok{\#   {-} If near\_minus\_base deltas are \textasciitilde{}0 for all tau (and max |$\textbackslash{}Delta$| is O(10\^{}{-}3) or less),}
+\CommentTok{\#     the disagreement analysis is robust to nearest{-}neighbour harmonization.}
+\CommentTok{\#   {-} If bilin\_minus\_base deltas are large at low tau (especially tau = 0), bilinear}
+\CommentTok{\#     interpolation artificially inflates the footprint of small irrigation values}
+\CommentTok{\#     and increases disagreement near the detection limit.}
+
+\CommentTok{\# Nearest{-}neighbour harmonization does not alter the disagreement curves in }
+\CommentTok{\# any meaningful way and that is why we have used nearest{-}neighbour as the }
+\CommentTok{\# interpolation in the main analysis {-} disagreement is not an harmonization effect.}
+\FunctionTok{print}\NormalTok{(delta\_summary)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##            metric max_abs_delta tau_ha_at_max tau_label_at_max  delta_at_max
+##            <char>         <num>         <num>           <char>         <num>
+## 1:  frac_disagree  0.0348987654        0.0000     any_positive  0.0348987654
+## 2: frac_existence  0.0348987654        0.0000     any_positive  0.0348987654
+## 3:  frac_marginal  0.0197253086      794.3282            794ha  0.0197253086
+## 4:  frac_disagree  0.0004790123    50118.7234          50100ha -0.0004790123
+## 5: frac_existence  0.0001623457    50118.7234          50100ha -0.0001623457
+## 6:  frac_marginal  0.0003166667    50118.7234          50100ha -0.0003166667
+##          comparison
+##              <char>
+## 1: bilin_minus_base
+## 2: bilin_minus_base
+## 3: bilin_minus_base
+## 4:  near_minus_base
+## 5:  near_minus_base
+## 6:  near_minus_base
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Save tables for supplementary materials {-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}{-}}
+
+\FunctionTok{fwrite}\NormalTok{(curves,}
+       \StringTok{"./datasets/irrigated\_areas\_regridded/QA\_disagreement\_curves\_base\_near\_bilin.csv"}\NormalTok{)}
+\FunctionTok{fwrite}\NormalTok{(delta\_all,}
+       \StringTok{"./datasets/irrigated\_areas\_regridded/QA\_disagreement\_curve\_deltas\_vs\_base.csv"}\NormalTok{)}
+\FunctionTok{fwrite}\NormalTok{(delta\_summary,}
+       \StringTok{"./datasets/irrigated\_areas\_regridded/QA\_disagreement\_delta\_summary.csv"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+
+\end{document}

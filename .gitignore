@@ -34,6 +34,10 @@ datasets/irrigated_areas_regridded/*
 # Keep only irrigated_areas datasets
 !datasets/irrigated_areas_regridded/irrigated_areas*
 
+# ---- RMarkdown artefacts ----
+*_cache/
+*_files/
+
 # ---- RStudio ----
 .Rproj.user
 

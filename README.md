@@ -1,4 +1,4 @@
-
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19001232.svg)](https://doi.org/10.5281/zenodo.19001232)
 # Where irrigation exists is globally contested
 
 [Arnald Puy](https://www.arnaldpuy.com/), Olivia Richards, Seth N. Linga, Samuel

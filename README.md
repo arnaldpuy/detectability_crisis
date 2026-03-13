@@ -55,7 +55,7 @@ dt_wide <- dcast(dt, lon + lat + country + code + continent + resolution ~ datas
 
 ### Functions
 
-The "functions" folder contains all the custom functions coded for the analysis.
+The `functions` folder contains all the custom functions coded for the analysis.
 They are all sourced from the `.R`, `.pdf` and `.Rmd` files and therefore the 
 user of the code does not need to source them separately.
 

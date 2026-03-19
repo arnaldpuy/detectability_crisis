@@ -5,10 +5,21 @@
 !.gitignore
 
 # ---- CODE FILES (all formats) ----
-!code_original_datasets*
-!code_harmonization*
-!code_crop_maps*
-!code_main_analysis*
+!code_original_datasets.Rmd
+!code_original_datasets.R
+!code_original_datasets.pdf
+
+!code_harmonization.Rmd
+!code_harmonization.R
+!code_harmonization.pdf
+
+!code_crop_maps.Rmd
+!code_crop_maps.R
+!code_crop_maps.pdf
+
+!code_main_analysis.Rmd
+!code_main_analysis.R
+!code_main_analysis.pdf
 
 # README
 !README.md

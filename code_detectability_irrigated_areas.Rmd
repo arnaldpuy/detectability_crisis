@@ -2325,11 +2325,13 @@ dt_plot[order(n_pos)] %>%
 dt_summary <- dt_plot[, .(total = sum(N),
                           absence = sum(N[n_pos == 0]),
                           contested = sum(N[n_pos >=1 & n_pos <=8]),
-                          presence = sum(N[n_pos >=9])), 
+                          fewer_than_half = sum(N[n_pos < 5 & n_pos > 0]),
+                          presence = sum(N[n_pos >=9])),
                       resolution]
 
 dt_summary[, `:=`(frac_absence = absence / total,
                   frac_contested = contested / total,
+                  frac_fewer_than_half = fewer_than_half / total,
                   frac_presence = presence / total)]
 
 dt_summary

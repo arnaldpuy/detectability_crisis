@@ -398,45 +398,163 @@ fwrite(spam_dt, file.path(out_dir, "spam_dt.csv"))
 #   - Irrigated area per cell given directly in ha
 # =============================================================================
 
-asc_gripc <- "./irrigated_area_datasets/GRIPC/GRIPC_irrigated_area.asc"
-r_gripc <- rast(asc_gripc)
+asc_irrig <- "./irrigated_area_datasets/GRIPC/GRIPC_irrigated_area.asc"
+asc_paddy <- "./irrigated_area_datasets/GRIPC/GRIPC_paddy_area.asc"
 
-gripc_dt <- as.data.table(as.data.frame(r_gripc, xy = TRUE, na.rm = FALSE))
-setnames(gripc_dt, c("x", "y"), c("lon", "lat"))
+r_irrig <- rast(asc_irrig)
+r_paddy <- rast(asc_paddy)
 
-# Rename raster value to irrig_area_ha -----------------------------------------
+if (!compareGeom(r_irrig, r_paddy, stopOnError = FALSE)) {
+  stop("GRIPC irrigated and paddy rasters do not have matching geometry.")
+}
 
-setnames(gripc_dt, names(gripc_dt)[3], "irrig_area_ha")
+r_irrig[is.na(r_irrig)] <- 0
+r_paddy[is.na(r_paddy)] <- 0
 
-# Cell area (ha) for fraction (optional diagnostic) ---------------------------
+# -------------------------------------------------------------------
+# Country-level paddy irrigation shares reconstructed from
+# Huke & Huke (1997), page 47 summary table
+# share = (irrigated wet + irrigated dry) / total rice area
+# -------------------------------------------------------------------
 
-cell_ha_r <- cellSize(r_gripc, unit = "ha")
-gripc_dt[, cell_area_ha:= values(cell_ha_r)]
+paddy_share_dt <- data.table(
+  country = c(
+    "India",
+    "China",
+    "Indonesia",
+    "Bangladesh",
+    "Thailand",
+    "Vietnam",
+    "Myanmar",
+    "Philippines",
+    "Pakistan",
+    "Cambodia",
+    "Nepal",
+    "South Korea",
+    "Sri Lanka",
+    "North Korea",
+    "Malaysia",
+    "Lao PDR",
+    "Taiwan",
+    "Bhutan"
+  ),
+  paddy_irrig_share = c(
+    (15537 + 4123) / 42516,
+    (20490 + 9146) / 32125,
+    (2963 + 2963) / 11015,
+    (351 + 2267) / 10679,
+    (274 + 665) / 9644,
+    (1630 + 1630) / 6375,
+    (1812 + 1386) / 6285,
+    (1175 + 1029) / 3620,
+    min(1, (2125 + 0) / 2124),   # cap because of rounding in source
+    (140 + 165) / 1899,
+    (706 + 24) / 1488,
+    (776 + 0) / 1103,
+    (377 + 251) / 867,
+    (456 + 0) / 680,
+    (228 + 210) / 668,
+    (33 + 11) / 611,
+    min(1, (133 + 133) / 266),
+    (5 + 0) / 26
+  )
+)
 
-gripc_dt[, `:=`(irrig_area_mha = irrig_area_ha / 1e6,
-                irrig_frac = irrig_area_ha / cell_area_ha)]
+paddy_share_dt[, country:=countrycode(country, origin = "country.name",
+                                      destination = "country.name")]
 
-# Keep only irrigated cells ----------------------------------------------------
+# -------------------------------------------------------------------
+# Raster to table
+# -------------------------------------------------------------------
 
-gripc_dt <- gripc_dt[!is.na(irrig_area_ha)]
+irrig_dt <- as.data.table(as.data.frame(r_irrig, xy = TRUE, na.rm = FALSE))
+paddy_dt <- as.data.table(as.data.frame(r_paddy, xy = TRUE, na.rm = FALSE))
 
-# Countries + continents -------------------------------------------------------
+setnames(irrig_dt, c("x", "y", names(irrig_dt)[3]),
+         c("lon", "lat", "irrig_non_paddy_ha"))
+
+setnames(paddy_dt, c("x", "y", names(paddy_dt)[3]),
+         c("lon", "lat", "paddy_ha"))
+
+gripc_dt <- merge(irrig_dt, paddy_dt, by = c("lon", "lat"), all = TRUE)
+
+gripc_dt[is.na(irrig_non_paddy_ha), irrig_non_paddy_ha := 0]
+gripc_dt[is.na(paddy_ha), paddy_ha := 0]
+
+# -------------------------------------------------------------------
+# Countries / continents
+# -------------------------------------------------------------------
 
 gripc_dt <- add_country_continent(gripc_dt, countries_sf, chunk_size = 200000L)
 gripc_dt <- gripc_dt[!is.na(country) & !is.na(continent)]
 
+# Harmonize names if needed
+gripc_dt[country == "Korea, Republic of", country := "South Korea"]
+gripc_dt[country == "Korea, Democratic People's Republic of", country := "North Korea"]
+gripc_dt[country == "Lao People's Democratic Republic", country := "Lao PDR"]
+gripc_dt[country == "Taiwan, Province of China", country := "Taiwan"]
+gripc_dt[country == "Burma", country := "Myanmar"]
+
+# -------------------------------------------------------------------
+# Join country shares
+# -------------------------------------------------------------------
+
+# -------------------------------------------------------------------
+# Join country shares
+# -------------------------------------------------------------------
+
+gripc_dt <- merge(gripc_dt, paddy_share_dt, by = "country", all.x = TRUE)
+
+# If there is no paddy in the cell, the share is irrelevant
+gripc_dt[paddy_ha == 0 & is.na(paddy_irrig_share), paddy_irrig_share := 0]
+
+# Following Salmon et al.:
+# for non-Asian countries with paddy but no country-specific value, use 0.60
+gripc_dt[continent != "Asia" & paddy_ha > 0 & is.na(paddy_irrig_share),
+         paddy_irrig_share := 0.60]
+
+# Check only countries that actually have paddy area
+missing_paddy_countries <- unique(
+  gripc_dt[paddy_ha > 0 & is.na(paddy_irrig_share), country]
+)
+
+# Other countries, 0.60 -
+gripc_dt[continent == "Asia" & paddy_ha > 0 & is.na(paddy_irrig_share),
+         paddy_irrig_share := 0.60]
+
+# -------------------------------------------------------------------
+# Compute total irrigated area
+# -------------------------------------------------------------------
+
+gripc_dt[, irrig_paddy_ha := paddy_ha * paddy_irrig_share]
+gripc_dt[, irrig_area_ha := irrig_non_paddy_ha + irrig_paddy_ha]
+
+# Cell area raster -------------------------------------------------------------
+
+cell_ha_r <- cellSize(r_irrig, unit = "ha")
+
+cell_dt <- as.data.table(as.data.frame(cell_ha_r, xy = TRUE, na.rm = FALSE))
+setnames(cell_dt, c("x", "y", names(cell_dt)[3]), c("lon", "lat", "cell_area_ha"))
+
+# Join to gripc_dt -------------------------------------------------------------
+
+gripc_dt <- merge(gripc_dt, cell_dt, by = c("lon", "lat"), all.x = TRUE)
+
+gripc_dt[, `:=`(
+  irrig_area_mha = irrig_area_ha / 1e6,
+  irrig_frac = irrig_area_ha / cell_area_ha
+)]
+
+# Final formatting
 gripc_dt[, dataset:= "gripc"]
 gripc_dt[, mha:= irrig_area_mha]
 
 gripc_dt <- gripc_dt[, ..cols_to_retrieve]
 
-# Check totals------------------------------------------------------------------
-
-# Original paper does not report a total
+# Check global total
 gripc_dt[, sum(mha)]
 
-# Export------------------------------------------------------------------------
-
+# Export
 fwrite(gripc_dt, file.path(out_dir, "gripc_dt.csv"))
 
 # =============================================================================
@@ -574,6 +692,12 @@ mirca_dt <- fread("/Users/arnaldpuy/Documents/papers/detectability_irrigated_are
 # MERGE ALL DATASETS AND EXPORT ################################################
 
 # Rbind ------------------------------------------------------------------------
+
+dada<- fread("./datasets/irrigated_areas/irrigated_areas.csv")
+dada[!dataset == "gripc"] %>%
+  rbind(gripc_dt) %>%
+  fwrite("./datasets/irrigated_areas/irrigated_areas.csv")
+
 
 dada <- rbind(gaez_dt,
               giam_dt,
@@ -714,5 +838,259 @@ fwrite(zohaib_dt, file.path(out_dir, "zohaib_dt.csv"))
 # END RUNS #####################################################################
 ################################################################################
 ################################################################################
+
+
+# =============================================================================
+# GRIPC
+#   - Irrigated area per cell given directly in ha
+#   - Add only paddy area not already included within irrigated area
+#   - Cellwise approximation: union = max(irrigated, paddy)
+# =============================================================================
+
+
+asc_gripc_irrig <- "./irrigated_area_datasets/GRIPC/GRIPC_irrigated_area.asc"
+asc_gripc_paddy <- "./irrigated_area_datasets/GRIPC/GRIPC_paddy_area.asc"
+
+r_gripc_irrig <- rast(asc_gripc_irrig)
+r_gripc_paddy <- rast(asc_gripc_paddy)
+
+# Check geometry matches -------------------------------------------------------
+
+if (!compareGeom(r_gripc_irrig, r_gripc_paddy, stopOnError = FALSE)) {
+  stop("GRIPC irrigated-area and paddy-area rasters do not have the same geometry.")
+}
+
+# Treat missing values as zero -------------------------------------------------
+
+r_gripc_irrig[is.na(r_gripc_irrig)] <- 0
+r_gripc_paddy[is.na(r_gripc_paddy)] <- 0
+
+# Add only paddy not already included in irrigated area ------------------------
+# Cellwise union approximation:
+# irrig_total = irrig + max(paddy - irrig_overlap, 0)
+# with overlap approximated implicitly as the shared part within the cell,
+# this becomes max(irrig, paddy)
+
+r_gripc <- app(c(r_gripc_irrig, r_gripc_paddy), fun = max)
+names(r_gripc) <- "irrig_area_ha"
+
+# Raster to table --------------------------------------------------------------
+
+gripc_dt <- as.data.table(as.data.frame(r_gripc, xy = TRUE, na.rm = FALSE))
+setnames(gripc_dt, c("x", "y"), c("lon", "lat"))
+
+# Cell area (ha) for fraction (optional diagnostic) ---------------------------
+
+cell_ha_r <- cellSize(r_gripc, unit = "ha")
+gripc_dt[, cell_area_ha := values(cell_ha_r)]
+
+gripc_dt[, `:=`(
+  irrig_area_mha = irrig_area_ha / 1e6,
+  irrig_frac     = irrig_area_ha / cell_area_ha
+)]
+
+# Keep only irrigated cells ----------------------------------------------------
+
+gripc_dt <- gripc_dt[!is.na(irrig_area_ha) & irrig_area_ha > 0]
+
+# Countries + continents -------------------------------------------------------
+
+gripc_dt <- add_country_continent(gripc_dt, countries_sf, chunk_size = 200000L)
+gripc_dt <- gripc_dt[!is.na(country) & !is.na(continent)]
+
+gripc_dt[, dataset := "gripc"]
+gripc_dt[, mha := irrig_area_mha]
+
+gripc_dt <- gripc_dt[, ..cols_to_retrieve]
+
+# Check totals -----------------------------------------------------------------
+
+gripc_dt[, sum(mha)]
+
+# Export -----------------------------------------------------------------------
+
+fwrite(gripc_dt, file.path(out_dir, "gripc_dt.csv"))
+
+
+
+
+
+
+
+
+
+
+
+
+library(terra)
+library(data.table)
+
+# -------------------------------------------------------------------
+# Inputs
+# -------------------------------------------------------------------
+
+asc_irrig <- "./irrigated_area_datasets/GRIPC/GRIPC_irrigated_area.asc"
+asc_paddy <- "./irrigated_area_datasets/GRIPC/GRIPC_paddy_area.asc"
+
+r_irrig <- rast(asc_irrig)
+r_paddy <- rast(asc_paddy)
+
+if (!compareGeom(r_irrig, r_paddy, stopOnError = FALSE)) {
+  stop("GRIPC irrigated and paddy rasters do not have matching geometry.")
+}
+
+r_irrig[is.na(r_irrig)] <- 0
+r_paddy[is.na(r_paddy)] <- 0
+
+# -------------------------------------------------------------------
+# Country-level paddy irrigation shares reconstructed from
+# Huke & Huke (1997), page 47 summary table
+# share = (irrigated wet + irrigated dry) / total rice area
+# -------------------------------------------------------------------
+
+paddy_share_dt <- data.table(
+  country = c(
+    "India",
+    "China",
+    "Indonesia",
+    "Bangladesh",
+    "Thailand",
+    "Vietnam",
+    "Myanmar",
+    "Philippines",
+    "Pakistan",
+    "Cambodia",
+    "Nepal",
+    "South Korea",
+    "Sri Lanka",
+    "North Korea",
+    "Malaysia",
+    "Lao PDR",
+    "Taiwan",
+    "Bhutan"
+  ),
+  paddy_irrig_share = c(
+    (15537 + 4123) / 42516,
+    (20490 + 9146) / 32125,
+    (2963 + 2963) / 11015,
+    (351 + 2267) / 10679,
+    (274 + 665) / 9644,
+    (1630 + 1630) / 6375,
+    (1812 + 1386) / 6285,
+    (1175 + 1029) / 3620,
+    min(1, (2125 + 0) / 2124),   # cap because of rounding in source
+    (140 + 165) / 1899,
+    (706 + 24) / 1488,
+    (776 + 0) / 1103,
+    (377 + 251) / 867,
+    (456 + 0) / 680,
+    (228 + 210) / 668,
+    (33 + 11) / 611,
+    min(1, (133 + 133) / 266),
+    (5 + 0) / 26
+  )
+)
+
+paddy_share_dt[, country:=countrycode(country, origin = "country.name",
+                                      destination = "country.name")]
+
+# -------------------------------------------------------------------
+# Raster to table
+# -------------------------------------------------------------------
+
+irrig_dt <- as.data.table(as.data.frame(r_irrig, xy = TRUE, na.rm = FALSE))
+paddy_dt <- as.data.table(as.data.frame(r_paddy, xy = TRUE, na.rm = FALSE))
+
+setnames(irrig_dt, c("x", "y", names(irrig_dt)[3]),
+         c("lon", "lat", "irrig_non_paddy_ha"))
+
+setnames(paddy_dt, c("x", "y", names(paddy_dt)[3]),
+         c("lon", "lat", "paddy_ha"))
+
+gripc_dt <- merge(irrig_dt, paddy_dt, by = c("lon", "lat"), all = TRUE)
+
+gripc_dt[is.na(irrig_non_paddy_ha), irrig_non_paddy_ha := 0]
+gripc_dt[is.na(paddy_ha), paddy_ha := 0]
+
+# -------------------------------------------------------------------
+# Countries / continents
+# -------------------------------------------------------------------
+
+gripc_dt <- add_country_continent(gripc_dt, countries_sf, chunk_size = 200000L)
+gripc_dt <- gripc_dt[!is.na(country) & !is.na(continent)]
+
+# Harmonize names if needed
+gripc_dt[country == "Korea, Republic of", country := "South Korea"]
+gripc_dt[country == "Korea, Democratic People's Republic of", country := "North Korea"]
+gripc_dt[country == "Lao People's Democratic Republic", country := "Lao PDR"]
+gripc_dt[country == "Taiwan, Province of China", country := "Taiwan"]
+gripc_dt[country == "Burma", country := "Myanmar"]
+
+# -------------------------------------------------------------------
+# Join country shares
+# -------------------------------------------------------------------
+
+# -------------------------------------------------------------------
+# Join country shares
+# -------------------------------------------------------------------
+
+gripc_dt <- merge(gripc_dt, paddy_share_dt, by = "country", all.x = TRUE)
+
+# If there is no paddy in the cell, the share is irrelevant
+gripc_dt[paddy_ha == 0 & is.na(paddy_irrig_share), paddy_irrig_share := 0]
+
+# Following Salmon et al.:
+# for non-Asian countries with paddy but no country-specific value, use 0.60
+gripc_dt[continent != "Asia" & paddy_ha > 0 & is.na(paddy_irrig_share),
+         paddy_irrig_share := 0.60]
+
+# Check only countries that actually have paddy area
+missing_paddy_countries <- unique(
+  gripc_dt[paddy_ha > 0 & is.na(paddy_irrig_share), country]
+)
+
+# Other countries, 0.60 -
+gripc_dt[continent == "Asia" & paddy_ha > 0 & is.na(paddy_irrig_share),
+         paddy_irrig_share := 0.60]
+
+# -------------------------------------------------------------------
+# Compute total irrigated area
+# -------------------------------------------------------------------
+
+gripc_dt[, irrig_paddy_ha := paddy_ha * paddy_irrig_share]
+gripc_dt[, irrig_area_ha := irrig_non_paddy_ha + irrig_paddy_ha]
+
+# Cell area raster -------------------------------------------------------------
+
+cell_ha_r <- cellSize(r_irrig, unit = "ha")
+
+cell_dt <- as.data.table(as.data.frame(cell_ha_r, xy = TRUE, na.rm = FALSE))
+setnames(cell_dt, c("x", "y", names(cell_dt)[3]), c("lon", "lat", "cell_area_ha"))
+
+# Join to gripc_dt -------------------------------------------------------------
+
+gripc_dt <- merge(gripc_dt, cell_dt, by = c("lon", "lat"), all.x = TRUE)
+
+gripc_dt[, `:=`(
+  irrig_area_mha = irrig_area_ha / 1e6,
+  irrig_frac = irrig_area_ha / cell_area_ha
+)]
+
+# Final formatting
+gripc_dt[, dataset:= "gripc"]
+gripc_dt[, mha:= irrig_area_mha]
+
+gripc_dt <- gripc_dt[, ..cols_to_retrieve]
+
+# Check global total
+gripc_dt[, sum(mha)]
+
+# Export
+fwrite(gripc_dt, file.path(out_dir, "gripc_dt.csv"))
+
+
+
+
+
 
 

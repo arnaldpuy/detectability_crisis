@@ -7,7 +7,7 @@ knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 # Load libraries ---------------------------------------------------------------
 
 sensobol::load_packages(c("data.table", "scales", "cowplot", "tidyverse", "sensobol",
-                          "here", "terra", "rnaturalearth", "sf", "countrycode", 
+                          "here", "terra", "rnaturalearth", "sf", "countrycode",
                           "wesanderson", "benchmarkme", "parallel"))
 
 # Create custom theme ----------------------------------------------------------
@@ -65,8 +65,8 @@ tau_palette <- c("Agreement"= "#2ECC71",
                  "High disagreement" = "#E74C3C",
                  "Extreme disagreement" = "red")
 
-res_palette <- c("0.2deg" = "lightblue",  
-                 "0.4deg" = "#117A65",  
+res_palette <- c("0.2deg" = "lightblue",
+                 "0.4deg" = "#117A65",
                  "1deg"   = "darkblue")
 
 
@@ -274,7 +274,7 @@ mat_sum <- mat_long[, .(frac_mean = mean(frac_value, na.rm = TRUE),
 
 # Get values at tau = 0, 1, 10, 500, 1000, 5000, 10000 -------------------------
 
-target_tau <- c(0, 1, 10, 500, 1000, 1600, 5000, 10000)
+target_tau <- c(0, 1, 10, 500, 1000, 1600, 2000, 5000, 10000, 13000)
 
 mat_sum[, {dt_sub <- .SD
 idx <- sapply(target_tau, function(x) {
@@ -345,12 +345,12 @@ plot_agreement1 <- mat_sum[agreement %in% c("share_existence", "share_marginal")
 
 plot_agreement1
 
-# Around tau > 10^4 ha, the existential and marginal components intersect. That 
+# Around tau > 10^4 ha, the existential and marginal components intersect. That
 # intersection has a clear conceptual meaning:
 # -It is the tolerance level at which disagreement about whether irrigation exists
 # at all becomes less dominant than disagreement about how much irrigation exists.
-# -Still small relative to grid-cell area. 1000 ha is only 2–3% of a 0.2º grid cell. 
-# That makes it a conservative tolerance as we are not allowing massive within-cell 
+# -Still small relative to grid-cell area. 1000 ha is only 2–3% of a 0.2º grid cell.
+# That makes it a conservative tolerance as we are not allowing massive within-cell
 # divergence.
 
 # SENSITIVITY ANALYSIS #########################################################
@@ -553,7 +553,7 @@ plot_grid(p1, p2, p3, ncol = 3, labels = "auto")
 ds_groups <- list(remote_sensing  = c("giam", "gripc"),
                   statistical_disagg  = c("gmia", "meier", "mirca2000", "mirca_os"),
                   landuse_allocation = c("spam", "gaez_v4"),
-                  machine_learning = c("nagaraj"), 
+                  machine_learning = c("nagaraj"),
                   IAM_based = c("luh2"))
 
 mapping_paradigm_vec <- names(ds_groups)
@@ -606,7 +606,7 @@ tau_results <- rbindlist(
     ds_res <- sort(unique(dt_res_long$dataset))
 
     # ---- CAST ONCE per resolution  ----
-    
+
     dt_res_wide_all <- dcast(dt_res_long,
                              lon + lat + country + code + continent ~ dataset,
                              value.var = "mha", fill = 0)
@@ -631,10 +631,10 @@ tau_results <- rbindlist(
       dt_w <- dt_res_wide_all[, c(idcols, use_ds), with = FALSE]
 
       dt_w[, `:=`(A_min = do.call(pmin, c(.SD, list(na.rm = TRUE))),
-                  A_max = do.call(pmax, c(.SD, list(na.rm = TRUE)))), 
+                  A_max = do.call(pmax, c(.SD, list(na.rm = TRUE)))),
            .SDcols = use_ds]
 
-      # ---- now only loop over taus 
+      # ---- now only loop over taus
       out_grp <- rbindlist(lapply(seq_along(taus_mha), function(k) {
 
         tau_ha  <- taus_ha[k]
@@ -1174,18 +1174,18 @@ tau_max_results <- rbindlist(
     ds_res <- sort(unique(dt_res_long$dataset))
 
     # resolution-specific detectability thresholds (in ha)----------------------
-    
+
     zero_tol_ha <- switch(res,
-      "0.2deg" = 400, # 1% of cell at 0.2°
-      "0.4deg" = 1600, # 1% of cell at 0.4°
-      "1deg" = 10000, # 1% of cell at 1°
+      "0.2deg" = 2450, # 1% of cell at 0.2°
+      "0.4deg" = 9850, # 1% of cell at 0.4°
+      "1deg" = 61600, # 1% of cell at 1°
       stop("Unknown resolution: ", res))
 
     rbindlist(
       lapply(dataset_vec, function(scn) {
 
         # which datasets to use -----------------------------------------------
-        
+
         if (scn == "all") {
           use_ds <- ds_res
         } else {
@@ -1193,12 +1193,12 @@ tau_max_results <- rbindlist(
         }
 
         # if only one dataset left, skip --------------------------------------
-        
+
         if (length(use_ds) < 2L) return(NULL)
 
         # reshape to wide ----------------------------------------------------
-        
-        
+
+
         dt_res_wide <- dcast(
           dt_res_long[dataset %in% use_ds],
           lon + lat + country + code + continent ~ dataset,
@@ -1248,9 +1248,9 @@ tau_max_all <- tau_max_results[scenario == "all"]
 # Bin the tau max results ------------------------------------------------------
 
 tau_max_results[, det_thresh:= fcase(
-  resolution == "0.2deg", 400,
-  resolution == "0.4deg", 1600,
-  resolution == "1deg", 10000)]
+  resolution == "0.2deg", 2450,
+  resolution == "0.4deg", 9850,
+  resolution == "1deg", 61600)]
 
 tau_max_results[, tau_bin:= fcase(
   is.na(tau_max_ha), "Agreement",
@@ -1282,7 +1282,7 @@ thresh_df <- unique(tau_max_results[!is.na(det_thresh), .(resolution, det_thresh
 
 dt_all <- tau_max_results[scenario == "all"]
 dt_all[, N_total := .N, by = .(resolution, continent)]
-frac_by_rcb <- dt_all[, .(frac = .N / unique(N_total)), 
+frac_by_rcb <- dt_all[, .(frac = .N / unique(N_total)),
                       .(resolution, continent, tau_bin)]
 
 frac_by_rcb[, .(min = min(frac), max = max(frac)), .(continent, tau_bin)] %>%
@@ -1318,7 +1318,7 @@ plot_stacked <- tau_max_results[, .N, by = .(resolution, tau_bin)] %>%
   scale_fill_manual(values = tau_palette, name = expression(tau[max])) +
   labs(y = "Fraction grid cells", x = NULL, fill = expression(tau[max])) +
   theme_AP() +
-  theme(legend.position = "none") 
+  theme(legend.position = "none")
 
 plot_stacked
 
@@ -1631,8 +1631,8 @@ tau_diag <- rbindlist(lapply(new_dataset_names, function(d) {
   tau_90 <- tmp[cum_share >= 0.9][1, tau_max_ha]
 
 # share of area that is identifiable under tau_threshold_ha (e.g. 1000 ha)
-  
-  area_share_1000 <- tmp[tau_max_ha <= 1000, fifelse(.N == 0, 0, 
+
+  area_share_1000 <- tmp[tau_max_ha <= 1000, fifelse(.N == 0, 0,
                                                      max(cum_share, na.rm = TRUE))]
 
   data.table(dataset = d,
@@ -1751,7 +1751,7 @@ jaccard_results[, .(min_jaccard = min(jaccard),
 
 # High agreement (0.7 - 0.8)
 # -------------------------------
-# High agreement only between specific subsets because of shared lineage 
+# High agreement only between specific subsets because of shared lineage
 # (GMIA and Meier; MIRCA2000 and Meier, etc)
 
 
@@ -1884,20 +1884,20 @@ p_topN
 
 # MERGE ########################################################################
 
-# (a) Spearman rank correlation of national total irrigated area rankings for all 
-# pairwise combinations of datasets. Black points show correlations computed across 
-# all grid cells, while red points show correlations restricted to identifiable 
-# cells (i.e., excluding cells where datasets fundamentally disagree on the 
-# presence of irrigation). Correlations are generally high (0.7–1.0), 
+# (a) Spearman rank correlation of national total irrigated area rankings for all
+# pairwise combinations of datasets. Black points show correlations computed across
+# all grid cells, while red points show correlations restricted to identifiable
+# cells (i.e., excluding cells where datasets fundamentally disagree on the
+# presence of irrigation). Correlations are generally high (0.7–1.0),
 # indicating broad agreement in country-level rankings. In some cases removing
-# disputed cells increases the correlation (red dot to the right of black dot), 
+# disputed cells increases the correlation (red dot to the right of black dot),
 # while in others it does not (red dot to the left of black dot)
-# 
-# (b) Jaccard similarity of the top 20 irrigated countries for each dataset pair. 
-# Black points again denote results using all cells and red points identifiable cells 
+#
+# (b) Jaccard similarity of the top 20 irrigated countries for each dataset pair.
+# Black points again denote results using all cells and red points identifiable cells
 # only. Most of the time focusing only on identifiable cells increases the
-# similarity; meaning that the top 20 become more similar across datasets. In other 
-# words, once disputed cells are removed there is a more coherent "core" of 
+# similarity; meaning that the top 20 become more similar across datasets. In other
+# words, once disputed cells are removed there is a more coherent "core" of
 # globally dominant irrigation countries. Possibly this is because the strongest
 # disagreement disproportionately affect marginal or mid-rank countries that
 # occassionally enter or leave the top 20 depending on dataset.
@@ -1931,8 +1931,8 @@ p_rankshift_hist
 
 rank_shift_stats <- rank_change_clean[, .(share_ge_1  = mean(abs_shift >= 1),
                                           share_ge_5  = mean(abs_shift >= 5),
-                                          share_ge_10 = mean(abs_shift >= 10), 
-                                          share_ge_20 = mean(abs_shift >= 20), 
+                                          share_ge_10 = mean(abs_shift >= 10),
+                                          share_ge_20 = mean(abs_shift >= 20),
                                           share_ge_50 = mean(abs_shift >= 50))]
 
 rank_shift_stats
@@ -1965,7 +1965,7 @@ top10_median <- country_totals_all[, .(median_rank = median(rank)), country] %>%
 
 top10_median
 
-# See change of ranks in countries when only confirmed irrigation is 
+# See change of ranks in countries when only confirmed irrigation is
 # accounted for ----------------------------------------------------------------
 
 rank_focus <- merge(country_totals_all[, .(country, dataset, rank_all = rank)],
@@ -1999,9 +1999,9 @@ rank_focus_summary[country %in% focus_countries]
 # - share_drop5: share of dataset cases with rank_shift >= 5.
 # - share_drop10: share with rank_shift >= 10.
 
-# VIETNAM, BANGLADESH, THAILAND, INDONESIA: in 90% of cases, Vietnam's rank gets 
-# at least 10 places worse. Median drop is c. 40 places. Bangladesh, Indonesia, 
-# Thailand show similar pattern; median shifts of 26-27 ranks and 90% of cases 
+# VIETNAM, BANGLADESH, THAILAND, INDONESIA: in 90% of cases, Vietnam's rank gets
+# at least 10 places worse. Median drop is c. 40 places. Bangladesh, Indonesia,
+# Thailand show similar pattern; median shifts of 26-27 ranks and 90% of cases
 # with drops larger than 90 ranks.
 
 # CHINA, INDIA, PAKISTAN, USA: Global rank is invariant to whether we use all cells
@@ -2112,9 +2112,9 @@ dt_share_lost <- dcast(dt, lon + lat + country + code + continent + resolution ~
 
 zero_tol_mha_fun <- function(res) {
   switch(res,
-    "0.2deg" = 400  / 1e6, # 0.0004 Mha
-    "0.4deg" = 1600 / 1e6, # 0.0016 Mha
-    "1deg" = 10000 / 1e6,  # 0.01 Mha
+    "0.2deg" = 2450  / 1e6, # 0.0004 Mha
+    "0.4deg" = 9850 / 1e6, # 0.0016 Mha
+    "1deg" = 61600 / 1e6,  # 0.01 Mha
     stop("Unknown resolution: ", res)
   )
 }
@@ -2218,7 +2218,7 @@ plot_curves_country
 
 # MERGE ########################################################################
 
-left <- plot_grid(plot_global_k, plot_curves_country, ncol = 1, labels = "auto", 
+left <- plot_grid(plot_global_k, plot_curves_country, ncol = 1, labels = "auto",
                   rel_heights = c(0.6, 0.4))
 plot_grid(left, plot_collapse_profiles, ncol = 2, labels = c("", "c"),
           rel_widths = c(0.35, 0.65))
@@ -2250,11 +2250,13 @@ dt_plot[order(n_pos)] %>%
 dt_summary <- dt_plot[, .(total = sum(N),
                           absence = sum(N[n_pos == 0]),
                           contested = sum(N[n_pos >=1 & n_pos <=8]),
-                          presence = sum(N[n_pos >=9])), 
+                          fewer_than_half = sum(N[n_pos < 5 & n_pos > 0]),
+                          presence = sum(N[n_pos >=9])),
                       resolution]
 
 dt_summary[, `:=`(frac_absence = absence / total,
                   frac_contested = contested / total,
+                  frac_fewer_than_half = fewer_than_half / total,
                   frac_presence = presence / total)]
 
 dt_summary
@@ -2264,7 +2266,7 @@ dt_summary
 dt_k <- dt_pres[, .N, .(resolution, n_pos)]
 
 dt_prob <- dt_k[, .(mean_k = weighted.mean(n_pos, N),
-                    detection_prob = weighted.mean(n_pos, N) / 10), 
+                    detection_prob = weighted.mean(n_pos, N) / 10),
                 resolution]
 
 dt_prob
@@ -2335,13 +2337,13 @@ plot_regime <- ggplot(dt_regime, aes(resolution, frac, fill = regime)) +
   geom_col(width = 0.7) +
   scale_fill_manual(values = c(absence = "#4D4D4D",
                                contested = "#E69F00",
-                               presence = "#0072B2"), 
-                    guide = guide_legend(nrow = 3), 
+                               presence = "#0072B2"),
+                    guide = guide_legend(nrow = 3),
                     name = "Agreement \nregime") +
   labs(x = NULL, y = "Fraction of cells") +
   theme_AP() +
   theme(legend.position = "top")
-  
+
 
 plot_regime
 
@@ -2359,7 +2361,7 @@ gaez_crops_1_aligned <- fread("./datasets/crops/gaez2015_crops_irrigated_1deg_al
 
 # Extract crop cols-------------------------------------------------------------
 
-crop_cols <- setdiff(names(gaez_crops_02_aligned),   
+crop_cols <- setdiff(names(gaez_crops_02_aligned),
                      c("lon", "lat", "country", "code", "continent"))
 
 # Run for all grids ------------------------------------------------------------
@@ -2523,10 +2525,10 @@ plot_grid(plot_heatmap, plot_fraction_lost, ncol = 1, labels = "auto", rel_heigh
 
 # MERGE ########################################################################
 
-plot_fraction_lost <- plot_fraction_lost + 
+plot_fraction_lost <- plot_fraction_lost +
   facet_wrap(~region, ncol = 2)
 
-top <- plot_grid(plot_heatmap, plot_fraction_lost, ncol = 2, labels = "auto", 
+top <- plot_grid(plot_heatmap, plot_fraction_lost, ncol = 2, labels = "auto",
                  rel_widths =  c(0.55, 0.45))
 
 top
@@ -2709,7 +2711,7 @@ plot_mean_ET <- ggplot(out_plot, aes(k, mean_dET_mmday, colour = resolution,
                                      group = resolution)) +
   geom_line() +
   geom_point() +
-  labs(x = "Datasets agreeing", 
+  labs(x = "Datasets agreeing",
        y = expression(atop("Mean " * Delta * ET[irr], "(mm d"^{-1} * ")"))) +
   scale_x_reverse(breaks = 10:5) +
   scale_color_manual(values = res_palette) +
@@ -2718,7 +2720,7 @@ plot_mean_ET <- ggplot(out_plot, aes(k, mean_dET_mmday, colour = resolution,
 
 # Plot total irrigation induced ET ---------------------------------------------
 # (global irrigation-induced evapotranspiration signal, obtained by integrating
-# over all retained cells; e.g., total amount of water transferred to the 
+# over all retained cells; e.g., total amount of water transferred to the
 # atmosphere per day because of irrigation)
 
 plot_total_ET <- ggplot(out_plot, aes(k, total_km3day, colour = resolution, group = resolution)) +
@@ -2782,50 +2784,50 @@ plot_grid(top, bottom, ncol = 1, rel_heights = c(0.685, 0.325))
 
 ## ----final_figure1, dependson=c("plot_uasa", "define_plots_taumax", "plot_map"), fig.width=5.5----
 
-left <- plot_grid(plot_uncertainty1, plot_agreement1, 
-                  plot_stacked + 
+left <- plot_grid(plot_uncertainty1, plot_agreement1,
+                  plot_stacked +
                     labs(y = "Fraction of cells"), ncol = 1, labels = "auto")
 plot_grid(left, plot_raster, ncol = 2, rel_widths = c(0.3, 0.7), labels = c("", "d"))
 
 
 ## ----final_figure1_1, dependson=c("plot_uasa", "define_plots_taumax", "plot_map"), fig.width=6----
 
-left <- plot_grid(plot_uncertainty1, plot_agreement1, 
+left <- plot_grid(plot_uncertainty1, plot_agreement1,
                   plot_regime, ncol = 1, labels = "auto")
-middle <- plot_grid(p1 + facet_wrap(~resolution, ncol = 1), 
+middle <- plot_grid(p1 + facet_wrap(~resolution, ncol = 1),
                     plot_stacked +
-                      labs(y = "Fraction of cells"), 
+                      labs(y = "Fraction of cells"),
                     ncol = 1, rel_heights = c(0.7, 0.3), labels = c("d", "e"))
 plot_grid(left, middle, plot_raster, ncol = 3, rel_widths = c(0.26, 0.26, 0.48), labels = c("", "", "f"))
 
 
 ## ----final_figure2, dependson= c("plot_uasa", "uasa_on_mapping_paradigm", "uasa_on_weights"), fig.height=1.5, fig.width=5.5----
 
-top <- plot_grid(plot_indices1 + 
+top <- plot_grid(plot_indices1 +
                    labs(x = "", y = "Fraction \n variance") +
-                   scale_fill_discrete(name = "Sobol' \n indices") + 
-                   theme(legend.position = c(0.4, 0.7)), 
-                 a1 + labs(x = "exclusion", y = "Fraction \n disagree"), 
-                 b1, c1, ncol = 4, labels = c("a", "", "", ""), 
+                   scale_fill_discrete(name = "Sobol' \n indices") +
+                   theme(legend.position = c(0.4, 0.7)),
+                 a1 + labs(x = "exclusion", y = "Fraction \n disagree"),
+                 b1, c1, ncol = 4, labels = c("a", "", "", ""),
                  rel_widths = c(0.23, 0.37, 0.2, 0.2))
 top
 
-middle <- plot_grid(plot_indices2 + 
+middle <- plot_grid(plot_indices2 +
                    labs(x = "", y = "Fraction \n variance") +
-                   scale_fill_discrete(name = "") + 
-                   theme(legend.position = "none"), 
-                 a2 + labs(x = "exclusion", y = "Fraction \n disagree"), 
-                 b2, c2, ncol = 4, labels = c("b", "", "", ""), 
+                   scale_fill_discrete(name = "") +
+                   theme(legend.position = "none"),
+                 a2 + labs(x = "exclusion", y = "Fraction \n disagree"),
+                 b2, c2, ncol = 4, labels = c("b", "", "", ""),
                  rel_widths = c(0.23, 0.37, 0.2, 0.2))
 
 middle
 
-bottom <- plot_grid(plot_indices3 + 
+bottom <- plot_grid(plot_indices3 +
                    labs(x = "", y = "Fraction \n variance") +
-                   scale_fill_discrete(name = "") + 
-                   theme(legend.position = "none"), 
-                 a3 + labs(x = "exclusion", y = "Fraction \n disagree"), 
-                 b3, c3, d3, ncol = 5, labels = c("c", "", "", "", ""), 
+                   scale_fill_discrete(name = "") +
+                   theme(legend.position = "none"),
+                 a3 + labs(x = "exclusion", y = "Fraction \n disagree"),
+                 b3, c3, d3, ncol = 5, labels = c("c", "", "", "", ""),
                  rel_widths = c(0.22, 0.34, 0.16, 0.15, 0.15))
 
 bottom
@@ -2853,4 +2855,746 @@ cat("Num cores:   "); print(parallel::detectCores(logical = FALSE))
 ## Return number of threads ---------------------------------------------------
 
 cat("Num threads: "); print(parallel::detectCores(logical = FALSE))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+library(data.table)
+library(ggplot2)
+library(scales)
+
+#--------------------------------------------
+# 1. Settings
+#--------------------------------------------
+
+datasets <- c(
+  "gaez_v4", "giam", "gmia", "gripc", "luh2",
+  "meier", "mirca2000", "mirca_os", "nagaraj", "spam"
+)
+
+countries_sel <- c("Vietnam", "Bangladesh", "Thailand")
+resolution_sel <- "0.2deg"
+
+#--------------------------------------------
+# 2. Keep only required rows
+#--------------------------------------------
+
+# dt_wide appears already to be at 0.2 deg
+dtw <- copy(dt_wide)[country %in% countries_sel]
+
+# dt_pres has multiple resolutions, so keep only the one of interest
+dtp <- copy(dt_pres)[country %in% countries_sel & resolution == resolution_sel]
+
+#--------------------------------------------
+# 3. Melt to long format
+#--------------------------------------------
+
+dtw_long <- melt(
+  dtw,
+  id.vars = c("lon", "lat", "country", "code", "continent"),
+  measure.vars = datasets,
+  variable.name = "dataset",
+  value.name = "irr_area"
+)
+
+dtp_long <- melt(
+  dtp,
+  id.vars = c("lon", "lat", "country", "code", "continent", "resolution"),
+  measure.vars = datasets,
+  variable.name = "dataset",
+  value.name = "pres"
+)
+
+#--------------------------------------------
+# 4. Join magnitude with presence mask
+#--------------------------------------------
+
+plot_dt <- merge(
+  dtw_long,
+  dtp_long[, .(lon, lat, country, dataset, pres)],
+  by = c("lon", "lat", "country", "dataset"),
+  all.x = TRUE
+)
+
+# If for some reason pres is missing after join, treat as absence
+plot_dt[is.na(pres), pres := 0]
+
+# Force cells with no irrigation presence to white (= 0)
+plot_dt[, irr_plot := fifelse(pres == 1, irr_area, 0)]
+
+#--------------------------------------------
+# 5. Optional: nicer labels/order
+#--------------------------------------------
+
+plot_dt[, dataset := factor(
+  dataset,
+  levels = datasets,
+  labels = c(
+    "GAEZ v4", "GIAM", "GMIA", "GRIPC", "LUH2",
+    "Meier", "MIRCA2000", "MIRCA-OS", "Nagaraj", "SPAM"
+  )
+)]
+
+plot_dt[, country := factor(
+  country,
+  levels = c("Vietnam", "Bangladesh", "Thailand")
+)]
+
+#--------------------------------------------
+# 6. Plot
+#--------------------------------------------
+
+max_val <- plot_dt[, max(irr_plot, na.rm = TRUE)]
+
+dt_wide[, .(country, gripc, gmia)] %>%
+  .[country %in% c("Vietnam")]
+
+p <- ggplot(plot_dt, aes(x = lon, y = lat, fill = irr_plot)) +
+  geom_raster() +
+  coord_equal() +
+  facet_grid(country~dataset) +
+  scale_fill_gradient(
+    low = "red",
+    high = "darkgreen",
+    limits = c(0, max_val),
+    trans = "sqrt",
+    name = "Irrigated area"
+  )+
+  labs(
+    x = NULL,
+    y = NULL,
+    title = "Identification of irrigated areas across datasets",
+    subtitle = "Red = no irrigation detected; darker green = larger irrigated area"
+  ) +
+  theme_AP() +
+  theme(
+    panel.grid = element_blank(),
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    strip.text = element_text(face = "bold")
+  )
+
+p
+
+p
+
+
+### STUDY OF THE DEFINITIONS ###################################################
+################################################################################
+
+# TEST 1: STUDY OF DEFINITION HETEROGENEITY ####################################
+
+dt_definitions <- fread("./llm_irrigated_definitions/outputs/irrigation_definition_table.csv")
+
+# Create crosswalk table -------------------------------------------------------
+
+crosswalk <- data.table(
+  source_file = c(
+    "Grogan et al. - 2022 - Global gridded crop harvested area, production, yield, and monthly physical area data circa 2015.pdf",
+    "Hurtt et al. - 2020 - Harmonization of global land use change and management for the period 850–2100 (LUH2) for CMIP6.pdf",
+    "Meier et al_2018_A global approach to estimate irrigated areas.pdf",
+    "Nagaraj et al_2021_A new dataset of global irrigation areas from 2001 to 2015.pdf",
+    "Portmann et al. - 2010 - MIRCA2000-Global monthly irrigated and rainfed cro.pdf",
+    "Salmon et al. - 2015 - Global rain-fed, irrigated, and paddy croplands A new high resolution map derived from remote sensi.pdf",
+    "Siebert et al_2013_Update of the digital global map of irrigation areas to version 5.pdf",
+    "Thenkabail et al_2009_Global irrigated area map (GIAM), derived from remote sensing, for the end of.pdf",
+    "Yu et al. - 2020 - A cultivated planet in 2010 – Part 2 The global gridded agricultural-production maps.pdf",
+    "s41597-024-04313-w-1.pdf"
+  ),
+  dataset = c(
+    "gaez_v4",
+    "luh2",
+    "meier",
+    "nagaraj",
+    "mirca2000",
+    "gripc",
+    "gmia",
+    "giam",
+    "spam",
+    "mirca_os"
+  )
+)
+
+# Keep the columns needed for the audit ----------------------------------------
+
+vars_def <- c("source_file",
+              "paper_title",
+              "irrigation_target",
+              "representation_unit",
+              "temporal_concept",
+              "paddy_treatment",
+              "permanent_crops_treatment",
+              "irrigation_basis")
+
+dt_definitions <- dt_definitions[, ..vars_def]
+
+# Merge with dataset column ----------------------------------------------------
+
+dt_definitions <- merge(dt_definitions, crosswalk, by = "source_file", all.x = TRUE)
+
+# Convert empty strings to NA, then label as "unclear" ------------------------
+
+for (v in setdiff(vars_def, c("source_file", "paper_title"))) {
+  dt_definitions[get(v) == "" | is.na(get(v)), (v):= "unclear"]
+}
+
+# Make frequency tables --------------------------------------------------------
+
+freq_list <- lapply(
+  setdiff(vars_def, c("source_file", "paper_title")),
+  function(v) make_freq_table(dt_definitions, v)
+)
+
+freq_dt <- rbindlist(freq_list, use.names = TRUE, fill = TRUE)
+freq_dt
+
+# Share of mixed / unclear datasets---------------------------------------------
+
+summary_mixed_unclear <- rbindlist(lapply(
+  setdiff(vars_def, c("source_file", "paper_title")),
+  function(v) {
+    tmp <- dt_definitions[, .(n_total = .N,
+                              n_unclear = sum(get(v) == "unclear", na.rm = TRUE),
+                              n_mixed = sum(get(v) %in% c("mixed", "mixed_or_multiple"), na.rm = TRUE))]
+    tmp[, variable:= v]
+    tmp[, share_unclear:= n_unclear / n_total]
+    tmp[, share_mixed:= n_mixed / n_total]
+    tmp[]
+  }), fill = TRUE)
+
+print(summary_mixed_unclear)
+
+
+# Barplots of definitional heterogeneity ---------------------------------------
+
+p1 <- plot_bar_var(freq_dt, "irrigation_target")
+p2 <- plot_bar_var(freq_dt, "representation_unit")
+p3 <- plot_bar_var(freq_dt, "temporal_concept")
+p4 <- plot_bar_var(freq_dt, "paddy_treatment")
+p5 <- plot_bar_var(freq_dt, "permanent_crops_treatment")
+p6 <- plot_bar_var(freq_dt, "irrigation_basis")
+
+plot_grid(p1, p2, p3, p4, p5, p6, ncol = 3, labels = "auto")
+
+# Dataset × definition heatmap panel
+
+dt_long <- melt(dt_definitions, id.vars = c("dataset"),
+                measure.vars = c("irrigation_target",
+                                 "representation_unit",
+                                 "temporal_concept",
+                                 "permanent_crops_treatment",
+                                 "irrigation_basis"),
+  variable.name = "definition_variable",
+  value.name = "definition_value")
+
+dataset_order <- dt_long[, .(
+  score = sum(definition_value %in% c("unclear", "mixed", "mixed_or_multiple"))),
+  by = dataset][order(-score, dataset)]$dataset
+
+dt_long[, dataset:= factor(dataset, levels = rev(dataset_order))]
+
+dt_long[, class_type:= fifelse(
+  definition_value == "unclear", "unclear",
+  fifelse(definition_value %in% c("mixed", "mixed_or_multiple"), "mixed", "specified")
+)]
+
+# Plot heatmap: Cells report the definition assigned to each dataset;
+# colour highlights whether the definition is specified, mixed, or unclear
+
+p_heat <- ggplot(dt_long, aes(definition_variable, dataset, fill = class_type)) +
+  geom_tile(color = "white", linewidth = 0.4) +
+  geom_text(aes(label = definition_value), size = 2.8) +
+  scale_fill_manual(values = c("specified" = "#4daf4a", "mixed" = "#ff7f00",
+                               "unclear" = "#bdbdbd")) +
+  labs(x = NULL, y = NULL, fill = NULL,
+       title = "Definition heterogeneity audit across irrigation datasets",
+       subtitle = "") +
+  theme_AP() +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 35, hjust = 1),
+        legend.position = "top")
+
+p_heat
+
+# Summary metrics---------------------------------------------------------------
+
+n_datasets <- uniqueN(dt_definitions$dataset)
+
+summary_text_dt <- rbindlist(lapply(
+  c("irrigation_target",
+    "representation_unit",
+    "temporal_concept",
+    "paddy_treatment",
+    "permanent_crops_treatment",
+    "irrigation_basis"),
+  function(v) {
+    tmp <- dt_definitions[, .(
+      n_unique_categories = uniqueN(get(v)),
+      n_unclear = sum(get(v) == "unclear"),
+      n_mixed = sum(get(v) %in% c("mixed", "mixed_or_multiple"))
+    )]
+    tmp[, variable:= v]
+    tmp[, share_unclear:= round(n_unclear / n_datasets, 3)]
+    tmp[, share_mixed:= round(n_mixed / n_datasets, 3)]
+    tmp[]
+  }
+), fill = TRUE)
+
+print(summary_text_dt)
+
+# TEXT FOR THE PAPER:
+
+# The literature audit reveals that global irrigation maps do not represent a single
+# concept of irrigated area. Across products, irrigation is variously defined as
+# equipped, actual, or harvested irrigation, while treatment of paddy rice, temporal
+# reference, and irrigation basis also varies. Several datasets are mixed or
+# conceptually unclear, indicating that definitional heterogeneity is real and must
+# be explicitly accounted for before assessing whether it can explain the observed
+# detectability crisis.
+
+# TEST 2: PAIRWISE SAME DEFINITION VERSUS DIFFERENT DEFINITION TEST ------------
+
+# choose one resolution for the pairwise test-----------------------------------
+
+resolution_sel <- "0.2deg"
+
+# PREPARE PRESENCE DATA --------------------------------------------------------
+
+dtp <- copy(dt_pres)[resolution == resolution_sel]
+
+# Dataset columns available in dt_pres -----------------------------------------
+
+id_cols <- c("lon", "lat", "country", "code", "continent", "resolution", "n_pos")
+dataset_cols <- setdiff(names(dtp), id_cols)
+
+# Keep only datasets that are both in def_dt and dt_pres ------------------------
+
+common_datasets <- intersect(dt_definitions$dataset, dataset_cols)
+
+dt_definitions <- dt_definitions[dataset %in% common_datasets]
+dtp <- dtp[, c(setdiff(id_cols, "n_pos"), common_datasets), with = FALSE]
+
+cat("\nDatasets used in pairwise test:\n")
+print(common_datasets)
+
+
+
+pair_dt <- compute_pairwise_disagreement(dtp, common_datasets)
+
+
+# ATTACH DEFINITIONAL ATTRIBUTES TO EACH PAIR ----------------------------------
+
+# Attributes for dataset i -----------------------------------------------------
+
+def_i <- copy(dt_definitions)
+setnames(def_i,
+         old = c("dataset", "irrigation_target", "representation_unit",
+                 "temporal_concept", "paddy_treatment",
+                 "permanent_crops_treatment", "irrigation_basis"),
+         new = c("dataset_i", "irrigation_target_i", "representation_unit_i",
+                 "temporal_concept_i", "paddy_treatment_i",
+                 "permanent_crops_treatment_i", "irrigation_basis_i"))
+
+# Attributes for dataset j------------------------------------------------------
+
+def_j <- copy(dt_definitions)
+setnames(def_j,
+         old = c("dataset", "irrigation_target", "representation_unit",
+                 "temporal_concept", "paddy_treatment",
+                 "permanent_crops_treatment", "irrigation_basis"),
+         new = c("dataset_j", "irrigation_target_j", "representation_unit_j",
+                 "temporal_concept_j", "paddy_treatment_j",
+                 "permanent_crops_treatment_j", "irrigation_basis_j"))
+
+pair_dt <- merge(pair_dt, def_i[, .(
+  dataset_i,
+  irrigation_target_i,
+  representation_unit_i,
+  temporal_concept_i,
+  paddy_treatment_i,
+  permanent_crops_treatment_i,
+  irrigation_basis_i
+)], by = "dataset_i", all.x = TRUE)
+
+pair_dt <- merge(pair_dt, def_j[, .(
+  dataset_j,
+  irrigation_target_j,
+  representation_unit_j,
+  temporal_concept_j,
+  paddy_treatment_j,
+  permanent_crops_treatment_j,
+  irrigation_basis_j
+)], by = "dataset_j", all.x = TRUE)
+
+# same-definition indicators----------------------------------------------------
+
+pair_dt[, same_irrigation_target:= irrigation_target_i == irrigation_target_j]
+pair_dt[, same_representation_unit:= representation_unit_i == representation_unit_j]
+pair_dt[, same_temporal_concept:= temporal_concept_i == temporal_concept_j]
+pair_dt[, same_paddy_treatment:= paddy_treatment_i == paddy_treatment_j]
+pair_dt[, same_permanent_crops_treatment:=permanent_crops_treatment_i == permanent_crops_treatment_j]
+pair_dt[, same_irrigation_basis:= irrigation_basis_i == irrigation_basis_j]
+
+# stricter indicators ----------------------------------------------------------
+
+pair_dt[, same_core_definition:= same_irrigation_target & same_representation_unit &
+          same_temporal_concept]
+
+pair_dt[, same_extended_definition:= same_irrigation_target & same_representation_unit &
+          same_temporal_concept & same_paddy_treatment & same_irrigation_basis]
+
+# optional: exclude unclear/mixed comparisons-----------------------------------
+
+pair_dt[, clear_irrigation_target:=
+          !(irrigation_target_i %in% c("unclear", "mixed_or_multiple")) &
+          !(irrigation_target_j %in% c("unclear", "mixed_or_multiple"))]
+
+pair_dt[, clear_core_definition :=
+          !(irrigation_target_i %in% c("unclear", "mixed_or_multiple")) &
+          !(irrigation_target_j %in% c("unclear", "mixed_or_multiple")) &
+          !(representation_unit_i %in% c("unclear", "mixed")) &
+          !(representation_unit_j %in% c("unclear", "mixed")) &
+          !(temporal_concept_i %in% c("unclear", "mixed")) &
+          !(temporal_concept_j %in% c("unclear", "mixed"))]
+
+
+# 5. DESCRIPTIVE COMPARISONS ---------------------------------------------------
+
+# Mean disagreement by same/different target
+desc_target <- pair_dt[, .(
+  n_pairs = .N,
+  mean_disagree_all = mean(share_disagree_all, na.rm = TRUE),
+  median_disagree_all = median(share_disagree_all, na.rm = TRUE),
+  mean_disagree_union = mean(share_disagree_union, na.rm = TRUE),
+  median_disagree_union = median(share_disagree_union, na.rm = TRUE),
+  mean_jaccard_dissimilarity = mean(jaccard_dissimilarity, na.rm = TRUE)
+), by = same_irrigation_target]
+
+print(desc_target)
+
+# Mean disagreement by same/different extended definition
+desc_extended <- pair_dt[, .(
+  n_pairs = .N,
+  mean_disagree_all = mean(share_disagree_all, na.rm = TRUE),
+  median_disagree_all = median(share_disagree_all, na.rm = TRUE),
+  mean_disagree_union = mean(share_disagree_union, na.rm = TRUE),
+  median_disagree_union = median(share_disagree_union, na.rm = TRUE),
+  mean_jaccard_dissimilarity = mean(jaccard_dissimilarity, na.rm = TRUE)
+), by = same_extended_definition]
+
+print(desc_extended)
+
+
+# WILCOXON TESTS ---------------------------------------------------------------
+
+# same vs different irrigation target -----------------
+# Are the disagreement values in the two groups statistically different?
+# It compares two groups of pairs of datasets:
+
+# Group 1: pairs where same_irrigation_target == TRUE
+# (both datasets claim to represent the same type of irrigation (e.g. both “actual”))
+#
+# Group 2: pairs where same_irrigation_target == FALSE
+# (datasets represent different concepts (e.g. “actual” vs “equipped”))
+
+# What is being compared?
+# The variable: share_disagree_union
+# (the fraction of cells where the two datasets disagree,
+# conditional on at least one detecting irrigation.)
+#
+# What the test asks: Are the disagreement values in the two groups statistically
+# different?
+
+w_target <- wilcox.test(share_disagree_union ~ same_irrigation_target,
+                        data = pair_dt)
+
+print(w_target)
+# Dataset pairs representing the same irrigation concept do not exhibit lower
+# disagreement than those representing different concepts (Wilcoxon test, $p = 0.97$).
+# This indicates that definitional alignment does not reduce disagreement.
+
+# same vs different core definition-------------------
+
+pair_dt[, core_similarity_score:= same_irrigation_target + same_representation_unit +
+          same_temporal_concept]
+
+cor.test(pair_dt$core_similarity_score, pair_dt$share_disagree_union, method = "spearman")
+
+# Increasing definitional similarity does not reduce disagreement
+# Even when datasets match across multiple definitional dimensions, they do not
+# agree more spatially.
+
+# PARAGRAPH: Disagreement does not decline with increasing definitional similarity
+# (Spearman’s $\rho = -0.04$, $p = 0.78$), indicating that even datasets aligned
+# across multiple conceptual dimensions fail to identify irrigation consistently.
+
+
+# REGRESSION MODEL--------------------------------------------------------------
+
+# Simple OLS on pairwise disagreement
+# Dependent variable: disagreement conditional on at least one map detecting irrigation
+mod1 <- lm(share_disagree_union ~
+             same_irrigation_target +
+             same_representation_unit +
+             same_temporal_concept +
+             same_paddy_treatment +
+             same_irrigation_basis,
+           data = pair_dt)
+
+summary(mod1)
+#
+# None of the definitional dimensions significantly explains pairwise
+# disagreement (all $p > 0.18$), and together they account for less than 8% of
+# its variance. Definitional differences therefore fail to explain the widespread
+# inconsistencies across irrigation maps.
+
+# Matching definitions across five dimensions does not systematically reduce disagreement.
+
+# PLOTS ------------------------------------------------------------------------
+
+
+# Boxplot: same vs different irrigation target
+p_target <- ggplot(pair_dt,
+  aes(x = factor(same_irrigation_target,
+                 levels = c(FALSE, TRUE),
+                 labels = c("Different target", "Same target")),
+      y = share_disagree_union)
+) +
+  geom_boxplot() +
+  labs(
+    x = NULL,
+    y = "Pairwise disagreement (conditional on union)",
+    title = "Pairwise disagreement for same-definition vs different-definition pairs",
+    subtitle = "Comparison by irrigation target"
+  ) +
+  theme_AP()
+
+p_target
+
+# Boxplot: same vs different extended definition
+p_ext <- ggplot(
+  pair_dt,
+  aes(x = factor(same_extended_definition,
+                 levels = c(FALSE, TRUE),
+                 labels = c("Different extended definition", "Same extended definition")),
+      y = share_disagree_union)
+) +
+  geom_boxplot() +
+  labs(
+    x = NULL,
+    y = "Pairwise disagreement (conditional on union)",
+    title = "Pairwise disagreement for same-definition vs different-definition pairs",
+    subtitle = "Comparison by extended definition"
+  ) +
+  theme_AP()
+
+p_ext
+
+
+# Global irrigation datasets do not represent a single, consistent concept of irrigated area.
+# Across products, irrigation is variously defined as actual, equipped or mixed irrigation,
+# and differs in representation unit (presence versus area), temporal reference
+# (annual, seasonal or reference-period snapshots), and treatment of paddy rice and
+# permanent crops (Fig. X). Several datasets combine multiple concepts or do not
+# explicitly state their definition, indicating substantial conceptual heterogeneity
+# across the ensemble.
+#
+# If definitional differences were the primary source of disagreement, datasets
+# sharing the same conceptual definition should exhibit higher spatial agreement.
+# However, this is not the case. Pairwise comparisons show that disagreement does
+# not differ between dataset pairs that share the same irrigation target and those
+# that do not (Wilcoxon test, p = 0.97), indicating that datasets aligned along
+# several conceptual attributes do not agree more on where irrigation exists.
+#
+# We further tested whether definitional harmonisation reduces disagreement at the
+# ensemble level by restricting the analysis to subsets of datasets sharing similar
+# definitions. Although disagreement appears lower within these subsets, this
+# reduction is entirely explained by the smaller number of datasets involved. When
+# compared against randomly sampled subsets of equal size, definition-consistent
+# subsets do not exhibit lower disagreement (Fig. X), demonstrating that the
+# apparent reduction is a statistical artefact rather than a consequence of
+# conceptual alignment.
+#
+# A multivariate regression including all definitional dimensions confirms these
+# results. None of the variables significantly explains pairwise disagreement (all p > 0.18)
+# and together they account for less than 8% of its variance (adjusted R2<0). Thus,
+# even when considered jointly, differences in irrigation definitions fail to explain
+# the widespread inconsistencies across datasets.
+#
+# Taken together, these results show that the detectability crisis cannot be attributed
+# to definitional heterogeneity. Datasets do not disagree because they represent
+# different types of irrigation; they disagree because they do not identify the
+# same locations as irrigated.
+
+
+
+
+
+
+
+
+# TEST NUMBER THREE:############################################################
+##################
+
+# Clean
+for (v in c("irrigation_target", "representation_unit", "temporal_concept")) {
+  def_dt[get(v) == "" | is.na(get(v)), (v) := "unclear"]
+}
+
+# Merge with your dataset names (same crosswalk as Test 2)
+# assume def_dt already has column "dataset"
+
+#--------------------------------------------------
+# Select subsets
+#--------------------------------------------------
+
+subset_target <- def_dt[
+  irrigation_target != "unclear",
+  .(datasets = list(dataset)),
+  by = irrigation_target
+][order(-lengths(datasets))]
+
+subset_unit <- def_dt[
+  representation_unit != "unclear",
+  .(datasets = list(dataset)),
+  by = representation_unit
+][order(-lengths(datasets))]
+
+subset_time <- def_dt[
+  temporal_concept != "unclear",
+  .(datasets = list(dataset)),
+  by = temporal_concept
+][order(-lengths(datasets))]
+
+print(subset_target)
+print(subset_unit)
+print(subset_time)
+
+
+dt <- dcast(dt, lon + lat + resolution + country + code + continent ~ dataset,
+      value.var = "mha") %>%
+  .[resolution == "0.2deg"]
+
+compute_disagreement_fraction <- function(dt, dataset_names) {
+
+  A <- as.matrix(dt[, ..dataset_names])
+
+  pres <- A > 0
+
+  n_present <- rowSums(pres, na.rm = TRUE)
+  n_datasets <- length(dataset_names)
+
+  disagreement <- n_present > 0 & n_present < n_datasets
+
+  frac_disagree <- mean(disagreement, na.rm = TRUE)
+
+  return(frac_disagree)
+}
+
+
+
+# Use same resolution as main analysis
+dtp <- dt_pres[resolution == "0.2deg"]
+
+# All datasets
+all_datasets <- intersect(names(dtp), def_dt$dataset)
+
+frac_full <- compute_disagreement_fraction(dtp, all_datasets)
+
+#--------------------------------------------------
+# Loop over subsets
+#--------------------------------------------------
+
+results <- list()
+
+for (i in seq_len(nrow(subset_target))) {
+
+  ds <- subset_target$datasets[[i]]
+  name <- subset_target$irrigation_target[i]
+
+  ds <- intersect(ds, names(dtp))
+
+  if (length(ds) >= 3) {
+
+    frac <- compute_disagreement_fraction(dtp, ds)
+
+    results[[length(results) + 1]] <- data.table(
+      grouping = "irrigation_target",
+      category = name,
+      n_datasets = length(ds),
+      frac_disagree = frac
+    )
+  }
+}
+
+for (i in seq_len(nrow(subset_unit))) {
+
+  ds <- subset_unit$datasets[[i]]
+  name <- subset_unit$representation_unit[i]
+
+  ds <- intersect(ds, names(dtp))
+
+  if (length(ds) >= 3) {
+
+    frac <- compute_disagreement_fraction(dtp, ds)
+
+    results[[length(results) + 1]] <- data.table(
+      grouping = "representation_unit",
+      category = name,
+      n_datasets = length(ds),
+      frac_disagree = frac
+    )
+  }
+}
+
+for (i in seq_len(nrow(subset_time))) {
+
+  ds <- subset_time$datasets[[i]]
+  name <- subset_time$temporal_concept[i]
+
+  ds <- intersect(ds, names(dtp))
+
+  if (length(ds) >= 3) {
+
+    frac <- compute_disagreement_fraction(dtp, ds)
+
+    results[[length(results) + 1]] <- data.table(
+      grouping = "temporal_concept",
+      category = name,
+      n_datasets = length(ds),
+      frac_disagree = frac
+    )
+  }
+}
+
+res_dt <- rbindlist(results)
+
+# Add full ensemble
+res_dt <- rbind(
+  data.table(
+    grouping = "full",
+    category = "all datasets",
+    n_datasets = length(all_datasets),
+    frac_disagree = frac_full
+  ),
+  res_dt
+)
+
+print(res_dt)
+
+fwrite(res_dt, "outputs/test3_definition_restriction_results.csv")
 

@@ -37,7 +37,7 @@ knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 
 ```{r regridding, warning=FALSE, message=FALSE, results = "hide"}
 
-# REPROJECTING AND REGRIDDING #################################################
+# REPROJECTING AND REGRIDDING ##################################################
 ################################################################################
 
 sensobol::load_packages(c("data.table", "terra", "magrittr", "here", "rnaturalearth", 
@@ -72,7 +72,7 @@ countries_sf <- countries_sf[, c("name", "geometry")]
 
 ```{r harmonization}
 
-# MAKE TEMPLATES ################################################################
+# MAKE TEMPLATES ###############################################################
 
 # Quick check that dataset totals look plausible and match expectations --------
 
@@ -416,7 +416,7 @@ fwrite(irrigated_areas_regridded_10,
 
 ```{r change_disagreement_curves, dependson="harmonization"}
 
-# DOES HARMONIZATION CHANGE THE DISAGREEMENT CURVES? ############################
+# DOES HARMONIZATION CHANGE THE DISAGREEMENT CURVES? ###########################
 #
 # The main results of the paper are disagreement curves: the fraction of grid
 # cells that disagree on irrigation presence as a function of the detectability

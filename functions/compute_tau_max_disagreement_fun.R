@@ -2,15 +2,15 @@
 # FUNCTION TO COMPUTE TAU MAX DISAGREEMENT #####################################
 
 # tau max = largest tau such that:
-# 1) at least one dataset reports <= 10 ha (treated as zero), and
+# 1) at least one dataset reports <= threshold ha (treated as zero), and
 # 2) at least one dataset reports >= tau
-# Cells where all datasets are > 10 ha return NA.
+# Cells where all datasets are > threshold ha return NA.
 
 compute_tau_max_existential_fun <- function(dt,
                                             dataset_names,
                                             taus_mha,
                                             taus_ha,
-                                            zero_tol_ha = 10) {
+                                            zero_tol_ha) {
 
   # Convert tolerance to Mha
   zero_tol_mha <- zero_tol_ha / 1e6
@@ -24,7 +24,7 @@ compute_tau_max_existential_fun <- function(dt,
   # Identify zeroish values (≤ zero_tol_ha)
   is_zero <- A <= zero_tol_mha
   has_zero <- rowSums(is_zero, na.rm = TRUE) > 0
-  all_nonzero <- rowSums(is_zero, na.rm = TRUE) == 0  # no dataset ≤ 10 ha
+  all_nonzero <- rowSums(is_zero, na.rm = TRUE) == 0  # no dataset ≤ threshold ha
 
   # Identify cells where everything is essentially zero
   has_nonzero <- rowSums(A > zero_tol_mha, na.rm = TRUE) > 0
@@ -42,7 +42,7 @@ compute_tau_max_existential_fun <- function(dt,
     has_large <- rowSums(is_large, na.rm = TRUE) > 0
 
     # Existential disagreement:
-    # at least one ≤ 10 ha AND at least one ≥ tau
+    # at least one ≤ threshold ha AND at least one ≥ tau
     disagree_mat[, i] <- has_zero & has_large
   }
 

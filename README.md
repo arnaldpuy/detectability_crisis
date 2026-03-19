@@ -66,5 +66,5 @@ We offer the code in `.R`, `.pdf` and `.Rmd`. There are four main analyses:
 * 1. `code_original_datasets`: workflow to transform all rasters from `tif` to tabular form.
 * 2. `code_harmonization`: harmonization of all irrigated area datasets at 0.2º, 0.4º and 1º.
 * 3. `code_crop_maps`: extraction of global irrigated crop production from [GAEZ+2015](https://www.nature.com/articles/s41597-021-01115-2).
-* 4. `code_detectability_irrigated_areas`: analysis of the detectability of irrigated areas at the grid cell level.
+* 4. `code_main_analysis`: analysis of the detectability of irrigated areas at the grid cell level.
 

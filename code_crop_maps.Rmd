@@ -38,7 +38,7 @@ knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 
 ```{r crop_regridding, message=FALSE, results = "hide"}
 
-# ARRANGE CROP DATASETS ########################################################
+# ARRANGE CROP DATASETS #######################################################
 ################################################################################
 
 sensobol::load_packages(c("data.table", "terra", "magrittr", "here", "rnaturalearth",

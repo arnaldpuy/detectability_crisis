@@ -7,7 +7,7 @@ knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 # REPROJECTING AND REGRIDDING #################################################
 ################################################################################
 
-sensobol::load_packages(c("data.table", "terra", "magrittr", "here", "rnaturalearth", 
+sensobol::load_packages(c("data.table", "terra", "magrittr", "here", "rnaturalearth",
                           "sf", "countrycode"))
 
 # LOAD ALL DATASETS ############################################################
@@ -20,7 +20,7 @@ maps <- unique(dt$dataset)
 
 # Source all functions needed in the workflow ----------------------------------
 
-r_functions <- list.files(path = here("functions"), 
+r_functions <- list.files(path = here("functions"),
                           pattern = "\\.R$", full.names = TRUE)
 lapply(r_functions, source)
 
@@ -51,7 +51,7 @@ template_ll_10 <- make_template_ll(1.0)
 
 # Equal-area intermediate template (global Mollweide). -------------------------
 
-# Mollweide is a global equal-area projection suitable 
+# Mollweide is a global equal-area projection suitable
 # for conservation-style reprojection steps.
 
 crs_ea <- "+proj=moll +lon_0=0 +datum=WGS84 +units=m +no_defs"
@@ -66,7 +66,7 @@ template_ea <- rast(xmin = -18000000, xmax = 18000000, ymin =  -9000000,
 
 # BUILD 0.2º STACK #############################################################
 
-# We selected 0.2° as a common support to preserve spatial heterogeneity and allow 
+# We selected 0.2° as a common support to preserve spatial heterogeneity and allow
 # exact aggregation to coarser grids.
 
 # Rasterize each dataset onto the 0.2° grid (area-preserving; totals conserved).
@@ -82,7 +82,7 @@ names(mha_stack_ll_02) <- maps
 orig_totals <- dt[, .(total_mha_orig = sum(mha, na.rm = TRUE)), dataset]
 
 ll02_totals <- data.table(dataset = names(mha_stack_ll_02),
-                          total_mha_ll02 = global(mha_stack_ll_02, "sum", 
+                          total_mha_ll02 = global(mha_stack_ll_02, "sum",
                                                   na.rm = TRUE)[, 1])
 
 qa_ll02 <- merge(orig_totals, ll02_totals, by = "dataset") %>%
@@ -99,7 +99,7 @@ fwrite(qa_ll02, "./datasets/irrigated_areas_regridded/QA_rasterization_totals_ll
 # FROM AREA TO FRACTION (0.2º LON / LAT) #######################################
 
 # We convert to fraction because fractional coverage is bounded [0,1] and can be
-# projected/resampled in a way that is conceptually consistent. It also avoids 
+# projected/resampled in a way that is conceptually consistent. It also avoids
 # projecting "areas" directly in a CRS where cell areas vary with latitude.
 
 A_ll02_ha <- cellSize(mha_stack_ll_02, unit = "ha") # cell area in ha
@@ -177,32 +177,32 @@ qa_total_conservation_after_renorm
 
 # SELECTION OF THE MAIN HARMONIZED PRODUCT #####################################
 # We choose near necause it preserves threshold-based presence/absence structure (no
-# smoothing), and our quality assessment shows it minimally changes disagreement 
+# smoothing), and our quality assessment shows it minimally changes disagreement
 # curves vs baseline.
 
 mha_ll02_target <- mha_ll02_target_near_cons # MAIN
 mha_ll02_target_sens_bilin <- mha_ll02_target_bilin_cons # SENSITIVITY
 
 #Quality assessment threshold stability (before vs after) for BOTH operators ---
-# We quantify whether harmonization changes binary classification at 
+# We quantify whether harmonization changes binary classification at
 # key tau values.
 
 tau_set <- c(0, 100, 1000)
 
-flip_old_bilin <- tau_flip_rates(mha_stack_ll_02, 
-                                 mha_ll02_target_bilin_cons, 
+flip_old_bilin <- tau_flip_rates(mha_stack_ll_02,
+                                 mha_ll02_target_bilin_cons,
                                  tau_ha = tau_set)
 
-prev_old_bilin <- tau_prevalence_change(mha_stack_ll_02, 
-                                        mha_ll02_target_bilin_cons, 
+prev_old_bilin <- tau_prevalence_change(mha_stack_ll_02,
+                                        mha_ll02_target_bilin_cons,
                                         tau_ha = tau_set)
 
-flip_old_near  <- tau_flip_rates(mha_stack_ll_02, 
-                                 mha_ll02_target_near_cons,  
+flip_old_near  <- tau_flip_rates(mha_stack_ll_02,
+                                 mha_ll02_target_near_cons,
                                  tau_ha = tau_set)
 
-prev_old_near  <- tau_prevalence_change(mha_stack_ll_02, 
-                                        mha_ll02_target_near_cons,  
+prev_old_near  <- tau_prevalence_change(mha_stack_ll_02,
+                                        mha_ll02_target_near_cons,
                                         tau_ha = tau_set)
 
 cat("\nFlip summary (OLD bilinear, conserved):\n")
@@ -229,17 +229,17 @@ fwrite(prev_old_bilin, "./datasets/irrigated_areas_regridded/QA_prevalence_chang
 fwrite(flip_old_near,  "./datasets/irrigated_areas_regridded/QA_flip_rates_old_near.csv")
 fwrite(prev_old_near,  "./datasets/irrigated_areas_regridded/QA_prevalence_change_old_near.csv")
 
-# Sanity check to guarantee that the output is actually on the intended grid 
+# Sanity check to guarantee that the output is actually on the intended grid
 # for downstream analysis ------------------------------------------------------
 
 res(mha_ll02_target)
 
 # Verify totals after full round-trip vs ORIGINAL dt totals --------------------
-# Another reviewer-proof check: final harmonized rasters still match 
+# Another reviewer-proof check: final harmonized rasters still match
 # original totals.
 
 ll02_target_totals <- data.table(dataset = names(mha_ll02_target),
-                                 total_mha_ll02_target = global(mha_ll02_target, 
+                                 total_mha_ll02_target = global(mha_ll02_target,
                                                                 "sum", na.rm = TRUE)[, 1])
 
 check_02 <- merge(orig_totals, ll02_target_totals, by = "dataset") %>%
@@ -278,7 +278,7 @@ setnames(irrigated_areas_regridded_02, c("x", "y"), c("lon", "lat"))
 # AGGREGATE TO 0.4° ############################################################
 
 # Spatial aggregation is a conservative robustness test: it reduces fine-scale
-# misalignment/noise so disagreement persisting at coarser scales is 
+# misalignment/noise so disagreement persisting at coarser scales is
 # harder to dismiss. fact=2 maps 0.2° to 0.4°; summing preserves total irrigated area.
 
 mha_stack_ll_04 <- aggregate(mha_ll02_target, fact = 2, fun = sum, na.rm = TRUE)
@@ -333,8 +333,8 @@ irrigated_areas_regridded_10 <- as.data.table(
 setnames(irrigated_areas_regridded_10, c("x", "y"), c("lon", "lat"))
 
 # ADD COUNTRIES + CONTINENT AND EXPORT #########################################
-# This step enables regional summaries and continent/country decomposition of 
-# disagreement. drop_all_zero_or_na_cells() reduces file size and speeds 
+# This step enables regional summaries and continent/country decomposition of
+# disagreement. drop_all_zero_or_na_cells() reduces file size and speeds
 # later computations by removing cells that contain no irrigation in all datasets.
 
 # 0.2° -------------------------------------------------------------------------
@@ -511,8 +511,8 @@ setorder(delta_summary, comparison, metric)
 #     interpolation artificially inflates the footprint of small irrigation values
 #     and increases disagreement near the detection limit.
 
-# Nearest-neighbour harmonization does not alter the disagreement curves in 
-# any meaningful way and that is why we have used nearest-neighbour as the 
+# Nearest-neighbour harmonization does not alter the disagreement curves in
+# any meaningful way and that is why we have used nearest-neighbour as the
 # interpolation in the main analysis - disagreement is not an harmonization effect.
 print(delta_summary)
 
@@ -525,3 +525,8 @@ fwrite(delta_all,
 fwrite(delta_summary,
        "./datasets/irrigated_areas_regridded/QA_disagreement_delta_summary.csv")
 
+
+
+
+#####################################################
+####################################################

@@ -3158,11 +3158,13 @@ lost}\label{fraction-of-irrigated-areas-lost}
 \NormalTok{dt\_summary }\OtherTok{\textless{}{-}}\NormalTok{ dt\_plot[, .(}\AttributeTok{total =} \FunctionTok{sum}\NormalTok{(N),}
                           \AttributeTok{absence =} \FunctionTok{sum}\NormalTok{(N[n\_pos }\SpecialCharTok{==} \DecValTok{0}\NormalTok{]),}
                           \AttributeTok{contested =} \FunctionTok{sum}\NormalTok{(N[n\_pos }\SpecialCharTok{\textgreater{}=}\DecValTok{1} \SpecialCharTok{\&}\NormalTok{ n\_pos }\SpecialCharTok{\textless{}=}\DecValTok{8}\NormalTok{]),}
-                          \AttributeTok{presence =} \FunctionTok{sum}\NormalTok{(N[n\_pos }\SpecialCharTok{\textgreater{}=}\DecValTok{9}\NormalTok{])), }
+                          \AttributeTok{fewer\_than\_half =} \FunctionTok{sum}\NormalTok{(N[n\_pos }\SpecialCharTok{\textless{}} \DecValTok{5} \SpecialCharTok{\&}\NormalTok{ n\_pos }\SpecialCharTok{\textgreater{}} \DecValTok{0}\NormalTok{]),}
+                          \AttributeTok{presence =} \FunctionTok{sum}\NormalTok{(N[n\_pos }\SpecialCharTok{\textgreater{}=}\DecValTok{9}\NormalTok{])),}
 \NormalTok{                      resolution]}
 
 \NormalTok{dt\_summary[, }\StringTok{\textasciigrave{}}\AttributeTok{:=}\StringTok{\textasciigrave{}}\NormalTok{(}\AttributeTok{frac\_absence =}\NormalTok{ absence }\SpecialCharTok{/}\NormalTok{ total,}
                   \AttributeTok{frac\_contested =}\NormalTok{ contested }\SpecialCharTok{/}\NormalTok{ total,}
+                  \AttributeTok{frac\_fewer\_than\_half =}\NormalTok{ fewer\_than\_half }\SpecialCharTok{/}\NormalTok{ total,}
                   \AttributeTok{frac\_presence =}\NormalTok{ presence }\SpecialCharTok{/}\NormalTok{ total)]}
 
 \NormalTok{dt\_summary}
@@ -3170,16 +3172,16 @@ lost}\label{fraction-of-irrigated-areas-lost}
 \end{Shaded}
 
 \begin{verbatim}
-##    resolution  total absence contested presence frac_absence frac_contested
-##        <char>  <int>   <int>     <int>    <int>        <num>          <num>
-## 1:       1deg   8053    3515      2831     1707    0.4364833      0.3515460
-## 2:     0.2deg 128660   43227     67043    18390    0.3359785      0.5210866
-## 3:     0.4deg  39569   14634     17640     7295    0.3698350      0.4458035
-##    frac_presence
-##            <num>
-## 1:     0.2119707
-## 2:     0.1429349
-## 3:     0.1843615
+##    resolution  total absence contested fewer_than_half presence frac_absence
+##        <char>  <int>   <int>     <int>           <int>    <int>        <num>
+## 1:       1deg   8053    3515      2831            1727     1707    0.4364833
+## 2:     0.2deg 128660   43227     67043           38789    18390    0.3359785
+## 3:     0.4deg  39569   14634     17640           10611     7295    0.3698350
+##    frac_contested frac_fewer_than_half frac_presence
+##             <num>                <num>         <num>
+## 1:      0.3515460            0.2144542     0.2119707
+## 2:      0.5210866            0.3014845     0.1429349
+## 3:      0.4458035            0.2681645     0.1843615
 \end{verbatim}
 
 \begin{Shaded}

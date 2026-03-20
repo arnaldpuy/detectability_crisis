@@ -28,23 +28,6 @@
 !functions/
 !functions/**
 
-# ---- DATASETS STRUCTURE ----
-
-# Allow datasets folder
-!datasets/
-
-# Ignore everything inside datasets
-datasets/*
-
-# Allow the irrigated_area_regridded folder
-!datasets/irrigated_areas_regridded/
-
-# Ignore everything inside it
-datasets/irrigated_areas_regridded/*
-
-# Keep only irrigated_areas datasets
-!datasets/irrigated_areas_regridded/irrigated_areas*
-
 # ---- RMarkdown artefacts ----
 *_cache/
 *_files/

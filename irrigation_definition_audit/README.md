@@ -1,10 +1,13 @@
 # Irrigation Definition Audit Pipeline
 
-This repository provides a reproducible pipeline to extract and audit how global irrigation datasets define irrigation across scientific studies.
+This repository provides a reproducible pipeline to extract and audit how global 
+irrigation datasets define irrigation across scientific studies.
 
 ## Overview
 
-Global irrigation maps differ not only in magnitude, but in how irrigation is defined. This repository implements a structured audit of these definitions using a large language model (DeepSeek-R1, 32B parameters).
+Global irrigation maps differ not only in magnitude, but in how irrigation is 
+defined. This repository implements a structured audit of these definitions 
+using a large language model (DeepSeek-R1, 32B parameters).
 
 Each document is classified across six dimensions:
 
@@ -15,17 +18,18 @@ Each document is classified across six dimensions:
 * **Treatment of permanent crops**
 * **Irrigation basis** (infrastructure-based vs water-use based)
 
-The pipeline enforces strict, evidence-based classification and supports reproducible analysis of definitional heterogeneity across datasets.
+The pipeline enforces evidence-based classification and supports 
+reproducible analysis of definitional heterogeneity across datasets.
 
 ---
 
 ## Methodological features
 
-* **Constrained classification**: labels must be selected from predefined categories
-* **Evidence-based extraction**: all classifications require explicit textual support
-* **Conservative inference**: absence of evidence results in `"Unclear"`
-* **Adversarial verification**: a second model pass validates each classification
-* **Retrieval auditing**: relevance of extracted pages is quantified (coverage and recall proxy)
+* **Constrained classification**: labels must be selected from predefined categories.
+* **Evidence-based extraction**: all classifications require explicit textual support.
+* **Conservative inference**: absence of evidence results in `"Unclear"`.
+* **Adversarial verification**: a second model pass validates each classification.
+* **Retrieval auditing**: relevance of extracted pages is quantified (coverage and recall proxy).
 
 ---
 
@@ -78,9 +82,9 @@ caffeinate -dimsu python src/extract_irrigation_definitions.py ...
 
 The pipeline produces:
 
-* `irrigation_definition_table.csv` → main analysis dataset
-* `irrigation_definition_table.xlsx` → spreadsheet version
-* `irrigation_definition_details.jsonl` → full structured outputs (including citations)
+* `irrigation_definition_table.csv` → main analysis dataset.
+* `irrigation_definition_table.xlsx` → spreadsheet version.
+* `irrigation_definition_details.jsonl` → full structured outputs (including citations).
 
 Each record includes:
 
@@ -99,24 +103,27 @@ The full prompt used for classification is provided in:
 prompts/prompt.txt
 ```
 
-The prompt enforces strict label selection, explicit evidence requirements, and conservative classification rules.
+The prompt enforces strict label selection, explicit evidence requirements and 
+conservative classification rules.
 
 ---
 
 ## Reproducibility
 
-* Deterministic outputs (temperature = 0)
-* Fully specified prompt and schema
-* Cached intermediate results
-* Retrieval and classification steps are auditable
+* Deterministic outputs (temperature = 0).
+* Fully specified prompt and schema.
+* Cached intermediate results.
+* Retrieval and classification steps are auditable.
 
 ---
 
 ## Data availability
 
-The extracted irrigation definition dataset is provided in this repository as a CSV file.
+The extracted irrigation definition dataset is provided in this repository as 
+a CSV file.
 
-Input PDFs are not distributed due to licensing constraints. Users should provide their own corpus of documents.
+Input PDFs are not distributed due to licensing constraints. Users should 
+provide their own corpus of documents.
 
 ---
 

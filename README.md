@@ -30,29 +30,6 @@ The irrigated area maps used on our study are the following
 
 We provide all the functions needed to replicate our workflow in the "functions" folder. 
 
-#### Generated data
-
-The `datasets/irrigated_areas_regridded` folder contains the data produced and analysed in this study. 
-
-* `irrigated_areas_regridded` folder: It contains the ten maps mentioned above
-harmonized to the following resolutions: 
-
-  - `irrigated_areas_regridded_02.csv`: at a 0.2º resolution.
-  - `irrigated_areas_regridded_04.csv`: at a 0.4º resolution.
-  - `irrigated_areas_regridded_10.csv`: at a 1º resolution.
-  
-The datasets are in long format. To turn them into wide format, the user can
-run the following code snippet in `R` (example with the dataset at 0.2º):
-  
-```r
-library(data.table)
-
-dt <- fread("irrigated_areas_regridded_02.csv")
-
-dt_wide <- dcast(dt, lon + lat + country + code + continent + resolution ~ dataset, value.var = "mha")
-
-```
-
 ### Functions
 
 The `functions` folder contains all the custom functions coded for the analysis.

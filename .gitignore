@@ -4,6 +4,15 @@
 # Keep gitignore itself
 !.gitignore
 
+# ---- KEEP ENTIRE IRRIGATION AUDIT FOLDER ----
+!irrigation_definition_audit/
+!irrigation_definition_audit/**
+
+# ---- EXCLUDE JSON FILES INSIDE IT ----
+irrigation_definition_audit/*.json
+irrigation_definition_audit/**/*.json
+
+
 # ---- CODE FILES (all formats) ----
 !code_original_datasets.Rmd
 !code_original_datasets.R

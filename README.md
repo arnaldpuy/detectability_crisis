@@ -28,7 +28,7 @@ The irrigated area maps used on our study are the following
 
 ## Replication
 
-We provide all the functions needed to replicate our workflow in the "functions" folder. 
+We provide all the functions needed to replicate our workflow in the "functions" folder.
 
 ### Functions
 
@@ -45,3 +45,8 @@ We offer the code in `.R`, `.pdf` and `.Rmd`. There are four main analyses:
 * 3. `code_crop_maps`: extraction of global irrigated crop production from [GAEZ+2015](https://www.nature.com/articles/s41597-021-01115-2).
 * 4. `code_main_analysis`: analysis of the detectability of irrigated areas at the grid cell level.
 
+### Irrigation definition audit
+
+The folder `irrigation definition audit` contains the full extraction pipeline used 
+to audit how irrigation is defined across datasets, including the classification 
+script, the constrained prompt and the resulting dataset of definitions.

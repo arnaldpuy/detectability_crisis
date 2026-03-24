@@ -39,7 +39,7 @@ knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 
 ```{r, warning=FALSE, message=FALSE, results = "hide"}
 
-# Load libraries ----------------------------------------------------------------
+# Load libraries ---------------------------------------------------------------
 
 sensobol::load_packages(c("data.table", "scales", "cowplot", "tidyverse", "sensobol",
                           "here", "terra", "rnaturalearth", "sf", "countrycode", 
@@ -1204,6 +1204,287 @@ bottom <- plot_grid(a3, b3, c3, d3, ncol = 4, rel_widths = c(0.35, 0.25, 0.2, 0.
 plot_grid(top, bottom, ncol = 1)
 ```
 
+## UA/SA on mapping variables
+
+```{r AAI_vs_AEI, dependson="uasa", fig.height=3, fig.width=3}
+
+# MAPPING PARADIGM EXCLUSION UA/SA ##############################################
+
+ds_groups <- list(AEI = c("meier", "nagaraj", "gaez_v4", "spam", "luh2"), 
+                  AAI = c("giam", "gmia", "gripc", "mirca2000", "mirca_os"))
+
+mapping_paradigm_vec <- names(ds_groups)
+n_mapping_paradigm_vec <- length(mapping_paradigm_vec)
+
+# Create the sample matrix -----------------------------------------------------
+
+params <- c("resolution", "tau", "exclusion")
+mat <- data.table(sobol_matrices(matrices = matrices, N = N, params = params))
+
+# Transform resolution column --------------------------------------------------
+
+mat[, resolution:= pmin(n_resolution_vec, 1L + floor(resolution * n_resolution_vec))]
+mat[, resolution:= resolution_vec[resolution]]
+
+# Transform tau column ---------------------------------------------------------
+
+mat[, tau:= pmin(n_tau_vec, 1L + floor(tau * n_tau_vec))]
+mat[, tau:= tau_vec[tau]]
+
+# Transform exclusion column ---------------------------------------------------
+
+mat[, exclusion:= pmin(n_mapping_paradigm_vec, 1L + floor(exclusion * n_mapping_paradigm_vec))]
+mat[, exclusion:= mapping_paradigm_vec[exclusion]]
+
+# PRE-COMPUTE ALL COMBINATIONS #################################################
+
+# Compute all possibilities by looping over resolutions and tau values ---------
+
+# Set parallel backend --------------------------
+
+resolutions <- sort(unique(dt$resolution))
+ncores <- max(1, parallel::detectCores() - 1)
+
+# ds_groups: named list of dataset keys to exclude by mapping category
+# mat: data.table with columns resolution, tau (in ha), exclusion (category name)
+
+idcols <- c("lon","lat","country","code","continent")
+
+tau_results <- rbindlist(
+  parallel::mclapply(resolutions, function(res) {
+    
+    dt_res_long <- dt[resolution == res]
+    if (nrow(dt_res_long) == 0L) return(NULL)
+    
+    # scenarios to run for this resolution
+    mat_res <- mat[resolution == res]
+    if (nrow(mat_res) == 0L) return(NULL)
+    
+    # datasets present at this resolution
+    ds_res <- sort(unique(dt_res_long$dataset))
+    
+    # ---- CAST ONCE per resolution  ----
+    
+    dt_res_wide_all <- dcast(dt_res_long,
+                             lon + lat + country + code + continent ~ dataset,
+                             value.var = "mha", fill = 0)
+    
+    # loop exclusion groups (few) instead of mat rows (many)
+    excl_levels <- unique(mat_res$exclusion)
+    
+    rbindlist(lapply(excl_levels, function(excl_grp) {
+      
+      # datasets to exclude for this group
+      excl_ds <- ds_groups[[excl_grp]]
+      if (is.null(excl_ds)) excl_ds <- character(0)
+      
+      use_ds <- setdiff(ds_res, excl_ds)
+      if (length(use_ds) < 2L) return(NULL)
+      
+      # taus used for THIS (resolution, exclusion-group)
+      taus_ha <- unique(mat_res[exclusion == excl_grp, tau])
+      taus_mha <- taus_ha * 1e-6
+      
+      # ---- compute A_min/A_max ONCE per exclusion group ----
+      dt_w <- dt_res_wide_all[, c(idcols, use_ds), with = FALSE]
+      
+      dt_w[, `:=`(A_min = do.call(pmin, c(.SD, list(na.rm = TRUE))),
+                  A_max = do.call(pmax, c(.SD, list(na.rm = TRUE)))), 
+           .SDcols = use_ds]
+      
+      # ---- now only loop over taus 
+      out_grp <- rbindlist(lapply(seq_along(taus_mha), function(k) {
+        
+        tau_ha  <- taus_ha[k]
+        tau_mha <- taus_mha[k]
+        
+        out <- compute_tau_fun(dt_w, tau_mha, use_ds)
+        
+        out[, `:=`(
+          tau_label = paste0(format(tau_ha, scientific = FALSE, trim = TRUE), "ha"),
+          tau_ha = tau_ha,
+          tau_mha = tau_mha,
+          resolution = res,
+          exclusion  = excl_grp
+        )]
+        
+        out
+      }), use.names = TRUE, fill = TRUE)
+      
+      out_grp
+    }), use.names = TRUE, fill = TRUE)
+    
+  }, mc.cores = ncores),
+  use.names = TRUE, fill = TRUE
+)
+
+# ARRANGE OUTPUT ##############################################################
+
+# Rename tau_ha to tau to match mat --------------------------------------------
+
+setnames(tau_results, "tau_ha", "tau")
+
+# Join all three disagreement metrics onto mat ---------------------------------
+
+mat[tau_results, on = .(resolution, tau, exclusion = exclusion),
+    `:=`(frac_disagree = i.frac_disagree,
+         frac_major_disagree = i.frac_major_disagree,
+         frac_minor_disagree = i.frac_minor_disagree,
+         share_existence = i.share_existence,
+         share_marginal = i.share_marginal)]
+
+# Reshape just these three for plotting ----------------------------------------
+
+mat_long <- melt(mat, id.vars = c("resolution", "tau", "exclusion"),
+                 measure.vars = c("frac_disagree", "frac_major_disagree",
+                                  "frac_minor_disagree", "share_existence",
+                                  "share_marginal"),
+                 variable.name = "agreement", value.name = "frac_value")
+
+# PREPARE DATA TO PLOT UNCERTAINTY #############################################
+
+# Calculate mean and quantiles by tau × agreement ------------------------------
+
+mat_sum <- mat_long[, .(frac_mean = mean(frac_value, na.rm = TRUE),
+                        frac_median = median(frac_value, na.rm = TRUE),
+                        frac_lwr = quantile(frac_value, 0.025, na.rm = TRUE),
+                        frac_upr = quantile(frac_value, 0.975, na.rm = TRUE)),
+                    .(tau, agreement)]
+
+mat_sum[, {dt_sub <- .SD
+idx <- sapply(target_tau, function(x) {
+  which.min(abs(log10(tau + 1e-12) - log10(x + 1e-12)))
+}
+)
+dt_sub[idx]
+},
+agreement
+]
+
+# Plot uncertainty -------------------------------------------------------------
+
+agreement_cols <- c(frac_disagree = "black",
+                    frac_major_disagree = "#B2182B",
+                    frac_minor_disagree = "#2166AC"  )
+
+plot_uncertainty <- mat_sum[!agreement %in% c("share_existence", "share_marginal")] %>%
+  ggplot(.,
+         aes(x = tau, y = frac_median, colour = agreement, fill = agreement)) +
+  geom_ribbon(aes(ymin = frac_lwr, ymax = frac_upr), alpha = 0.18, colour = NA) +
+  geom_line(linewidth = 1.1) +
+  scale_x_log10(labels = label_log(digits = 2)) +
+  scale_colour_manual(values = agreement_cols,
+                      breaks = c("frac_disagree",
+                                 "frac_major_disagree",
+                                 "frac_minor_disagree"),
+                      labels = c("Total",
+                                 "Major (\u2265 2 vs \u2265 2)",
+                                 "Minor (one outlier)"),
+                      name = "Disagreement") +
+  scale_fill_manual(values = agreement_cols,
+                    breaks = c("frac_disagree",
+                               "frac_major_disagree",
+                               "frac_minor_disagree"),
+                    labels = c("Total",
+                               "Major (\u2265 2 vs \u2265 2)",
+                               "Minor (one outlier)"),
+                    name = "Disagreement") +
+  labs(x = expression(tau~"(ha)"), y = "Fraction of cells") +
+  theme_AP() +
+  theme(legend.position = c(0.65, 0.77))
+
+plot_uncertainty
+
+plot_agreement <- mat_sum[agreement %in% c("share_existence", "share_marginal")] %>%
+  ggplot(., aes(x = tau, y = frac_median, colour = agreement, fill = agreement)) +
+  geom_ribbon(aes(ymin = frac_lwr, ymax = frac_upr), alpha = 0.18, colour = NA) +
+  geom_line(linewidth = 1.1) +
+  scale_colour_manual(values = exist_cols,
+                      labels = c(share_existence = "Existential",
+                                 share_marginal = "Marginal"),
+                      name = "Disagreement") +
+  scale_fill_manual(values = exist_cols,
+                    labels = c(share_existence = "Existential",
+                               share_marginal = "Marginal"),
+                    name = "Disagreement") +
+  scale_x_log10(labels = label_log(digits = 2)) +
+  labs(x = expression(tau~"(ha)"), y = "Fraction of \ndisagreeing cells") +
+  theme_AP() +
+  theme(legend.position = c(0.3, 0.55))
+
+
+plot_agreement
+
+# SENSITIVITY ANALYSIS #########################################################
+
+# Sobol' indices ---------------------------------------------------------------
+
+ind <- sobol_indices(matrices = matrices, N = N, params = params, Y
+                     = mat[, frac_disagree], R = R, boot = TRUE)
+
+plot_indices2 <- plot(ind) +
+  theme_AP() +
+  labs(x = "", y = "Fraction of variance") +
+  scale_x_discrete(labels = c(exclusion = "exclusion",
+                              resolution = "resolution",
+                              tau = expression(tau)),
+                   guide = guide_axis(n.dodge = 2)) +
+  theme(legend.position = c(0.3, 0.8))
+
+plot_indices2
+
+# SCATTERPLOTS OF OUTPUT AGAINS INTPUT #########################################
+
+label_map <- setNames(new_dataset_names, dataset_names)
+
+a2<- ggplot(mat[!exclusion == "all", c("exclusion", "frac_disagree")],
+            aes(exclusion, frac_disagree)) +
+  geom_boxplot() +
+  stat_summary_bin(fun = "mean", geom = "point",
+                   colour = "red", size = 1) +
+  scale_x_discrete(labels = label_map) +
+  scale_y_continuous(breaks = breaks_pretty(n = 3)) +
+  theme_AP() +
+  labs(x = "exclusion", y = "Fraction disagree")
+
+a2
+
+b2 <- ggplot(mat[1:N, c("resolution", "frac_disagree")],
+             aes(resolution, frac_disagree)) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c(`0.2deg` = "0.2º",
+                              `0.4deg` = "0.4º",
+                              `1deg` = "1.0º")) +
+  scale_y_continuous(breaks = breaks_pretty(n = 3)) +
+  stat_summary_bin(fun = "mean", geom = "point",
+                   colour = "red", size = 1) +
+  theme_AP() +
+  labs(x = "resolution", y = "")
+
+b2
+
+c2 <- ggplot(mat[1:N, c("tau", "frac_disagree")],
+             aes(tau, frac_disagree)) +
+  geom_point(size = 0.1, alpha = 0.1) +
+  stat_summary_bin(fun = "mean", geom = "point",
+                   colour = "red", size = 1) +
+  scale_y_continuous(breaks = breaks_pretty(n = 3)) +
+  theme_AP() +
+  scale_x_log10(labels = label_log(digits = 2)) +
+  labs(x = expression(tau~"(ha)"), y = "")
+
+c2
+```
+
+```{r AAI_vs_AEI_plot, fig.height=3.8, fig.width=5.5, dependson="AAI_vs_AEI"}
+
+# MERGE UA/SA PLOTS #############################################################
+
+top <- plot_grid(plot_uncertainty, plot_agreement, plot_indices2,
+                 ncol = 3, labels = "auto", rel_widths = c(0.4, 0.3, 0.3))
+bottom <- plot_grid(a2, b2, c2, ncol = 3, rel_widths = c(0.4, 0.3, 0.3), labels = "d")
+plot_grid(top, bottom, ncol = 1)
+```
 
 \newpage
 
@@ -3419,6 +3700,67 @@ plot_grid(p_target, p_ext, ncol = 2, labels = "auto")
 # different types of irrigation; they disagree because they do not identify the
 # same locations as irrigated.
 ```
+
+# Assessment of non-identifiability
+
+```{r non_identifiability, dependson="uasa", fig.height=2.5, fig.width=4.5}
+
+# INSTABILITY UNDER SMALL PERTURBATIONS ########################################
+
+# Fron long to wide dataset ----------------------------------------------------
+
+dt_wide <- dcast(dt, lon + lat + country + code + continent + 
+                   resolution ~ dataset, value.var = "mha")
+
+# Run analysis -----------------------------------------------------------------
+# 1% and 2% of the grid cell
+
+inst_res <- run_instability_analysis(dt = dt_wide, dataset_names = dataset_names,
+                                     tau_vals = c(1, 2), include_full = TRUE,
+                                     include_loo = TRUE)
+
+instability_dt <- inst_res$instability
+classification_dt <- inst_res$classifications
+
+instability_sum_all <- summarize_instability(instability_dt)
+instability_sum_rel <- summarize_instability_relevant(instability_dt)
+
+print(instability_sum_all)
+print(instability_sum_rel)
+
+# CONVERGENCE TEST #############################################################
+
+# Run on exact combinations ----------------------------------------------------
+
+tau_vals <- c(1, 2)
+
+res_exact_all <- rbindlist(lapply(tau_vals, function(tt) {
+  run_by_resolution(dt = dt_wide, dataset_names = dataset_names,
+                    tau_percent = tt, mode = "exact")
+}), fill = TRUE)
+
+res_exact_all_sum <- summarize_agreement_vs_information(res_exact_all)
+
+# Prettier labels---------------------------------------------------------------
+
+res_exact_all_sum[, tau_percent:= paste(tau_percent, "%", sep = "")]
+
+# Plot results -----------------------------------------------------------------
+
+p_disagree_exact <- ggplot(res_exact_all_sum, aes(k, frac_disagree_mean)) +
+  geom_ribbon(aes(ymin = frac_disagree_q05, ymax = frac_disagree_q95), alpha = 0.2) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  facet_grid(tau_percent~ resolution) +
+  scale_x_continuous(breaks = 2:length(dataset_names)) +
+  labs(x = "Nº datasets in ensemble subset (k)",
+       y = "Fraction of cells disagreeing") +
+  theme_AP()
+
+p_disagree_exact
+```
+
+\clearpage
 
 # Session information
 

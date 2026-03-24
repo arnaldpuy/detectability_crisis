@@ -566,3 +566,24 @@ fwrite(delta_all,
 fwrite(delta_summary,
        "./datasets/irrigated_areas_regridded/QA_disagreement_delta_summary.csv")
 ```
+
+# Session information
+
+```{r session_information}
+
+# SESSION INFORMATION ##########################################################
+
+sessionInfo()
+
+## Return the machine CPU -----------------------------------------------------
+
+cat("Machine:     "); print(benchmarkme::get_cpu()$model_name)
+
+## Return number of true cores -------------------------------------------------
+
+cat("Num cores:   "); print(parallel::detectCores(logical = FALSE))
+
+## Return number of threads ---------------------------------------------------
+
+cat("Num threads: "); print(parallel::detectCores(logical = FALSE))
+```

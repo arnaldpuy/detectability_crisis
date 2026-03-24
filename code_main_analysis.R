@@ -1,10 +1,10 @@
-## ----setup, include=FALSE---------------------------------------------------------------------------------
+## ----setup, include=FALSE---------------------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 
 
-## ----warning=FALSE, message=FALSE, results = "hide"-------------------------------------------------------
+## ----warning=FALSE, message=FALSE, results = "hide"-------------------------------------
 
-# Load libraries ----------------------------------------------------------------
+# Load libraries ---------------------------------------------------------------
 
 sensobol::load_packages(c("data.table", "scales", "cowplot", "tidyverse", "sensobol",
                           "here", "terra", "rnaturalearth", "sf", "countrycode", 
@@ -70,7 +70,7 @@ res_palette <- c("0.2deg" = "lightblue",
                  "1deg"   = "darkblue")
 
 
-## ----uasa-------------------------------------------------------------------------------------------------
+## ----uasa-------------------------------------------------------------------------------
 
 # LOAD ALL DATASETS ############################################################
 
@@ -260,7 +260,7 @@ mat_long <- melt(mat, id.vars = c("resolution", "tau", "exclusion"),
                  variable.name = "agreement", value.name = "frac_value")
 
 
-## ----plot_uasa, dependson="uasa", fig.height=3, fig.width=3-----------------------------------------------
+## ----plot_uasa, dependson="uasa", fig.height=3, fig.width=3-----------------------------
 
 # PREPARE DATA TO PLOT UNCERTAINTY ##############################################
 
@@ -417,7 +417,7 @@ c1 <- ggplot(mat[1:N, c("tau", "frac_disagree")],
 c1
 
 
-## ----all_maps, dependson=c("uasa", "plot_uasa"), fig.height=1.5, fig.width=5.8----------------------------
+## ----all_maps, dependson=c("uasa", "plot_uasa"), fig.height=1.5, fig.width=5.8----------
 
 # PLOT DATASETS #################################################################
 
@@ -447,7 +447,7 @@ dt[resolution == "0.2deg"] %>%
 
 
 
-## ----merge_uasa, dependson="plot_uasa", fig.height=3.5, fig.width=5.5-------------------------------------
+## ----merge_uasa, dependson="plot_uasa", fig.height=3.5, fig.width=5.5-------------------
 
 # MERGE UA/SA PLOTS #############################################################
 
@@ -457,7 +457,7 @@ bottom <- plot_grid(a1, b1, c1, ncol = 3, rel_widths = c(0.5, 0.25, 0.25), label
 plot_grid(top, bottom, ncol = 1)
 
 
-## ----effects_coarsening, dependson="uasa", fig.height=1.8, fig.width=1.8----------------------------------
+## ----effects_coarsening, dependson="uasa", fig.height=1.8, fig.width=1.8----------------
 
 # DOES ZOOMING OUT REDUCE DISAGREEMENT? #########################################
 
@@ -528,7 +528,7 @@ p3
 
 
 
-## ----plot_effects_resolution, dependson="effects_coarsening", fig.height=1.8, fig.width=5.3---------------
+## ----plot_effects_resolution, dependson="effects_coarsening", fig.height=1.8, fig.width=5.3----
 
 # Merge -------------------------------------------------------------------------
 
@@ -550,7 +550,7 @@ plot_grid(p1, p2, p3, ncol = 3, labels = "auto")
 
 
 
-## ----uasa_on_mapping_paradigm, dependson = "uasa", echo=FALSE, fig.height=3, fig.width=3------------------
+## ----uasa_on_mapping_paradigm, dependson = "uasa", echo=FALSE, fig.height=3, fig.width=3----
 
 # MAPPING PARADIGM EXCLUSION UA/SA ##############################################
 
@@ -823,7 +823,7 @@ c2 <- ggplot(mat[1:N, c("tau", "frac_disagree")],
 c2
 
 
-## ----merge_dataset_classes, fig.height=3.8, fig.width=5.5-------------------------------------------------
+## ----merge_dataset_classes, fig.height=3.8, fig.width=5.5-------------------------------
 
 # MERGE UA/SA PLOTS #############################################################
 
@@ -833,7 +833,7 @@ bottom <- plot_grid(a2, b2, c2, ncol = 3, rel_widths = c(0.4, 0.3, 0.3), labels 
 plot_grid(top, bottom, ncol = 1)
 
 
-## ----uasa_on_weights, dependson = "uasa", echo=FALSE, fig.height=3, fig.width=3---------------------------
+## ----uasa_on_weights, dependson = "uasa", echo=FALSE, fig.height=3, fig.width=3---------
 
 # UA/SA ON THE WEIGHTING SCHEME #################################################
 
@@ -1142,7 +1142,7 @@ d3 <- ggplot(mat[1:N, c("weight", "frac_disagree")],
 d3
 
 
-## ----plot_weights, dependson="uasa_on_weights", fig.height=3.8, fig.width=5.5-----------------------------
+## ----plot_weights, dependson="uasa_on_weights", fig.height=3.8, fig.width=5.5-----------
 
 # MERGE UA/SA PLOTS #############################################################
 
@@ -1152,7 +1152,287 @@ bottom <- plot_grid(a3, b3, c3, d3, ncol = 4, rel_widths = c(0.35, 0.25, 0.2, 0.
 plot_grid(top, bottom, ncol = 1)
 
 
-## ----tau_max, dependson="uasa"----------------------------------------------------------------------------
+## ----AAI_vs_AEI, dependson="uasa", fig.height=3, fig.width=3----------------------------
+
+# MAPPING PARADIGM EXCLUSION UA/SA ##############################################
+
+ds_groups <- list(AEI = c("meier", "nagaraj", "gaez_v4", "spam", "luh2"), 
+                  AAI = c("giam", "gmia", "gripc", "mirca2000", "mirca_os"))
+
+mapping_paradigm_vec <- names(ds_groups)
+n_mapping_paradigm_vec <- length(mapping_paradigm_vec)
+
+# Create the sample matrix -----------------------------------------------------
+
+params <- c("resolution", "tau", "exclusion")
+mat <- data.table(sobol_matrices(matrices = matrices, N = N, params = params))
+
+# Transform resolution column --------------------------------------------------
+
+mat[, resolution:= pmin(n_resolution_vec, 1L + floor(resolution * n_resolution_vec))]
+mat[, resolution:= resolution_vec[resolution]]
+
+# Transform tau column ---------------------------------------------------------
+
+mat[, tau:= pmin(n_tau_vec, 1L + floor(tau * n_tau_vec))]
+mat[, tau:= tau_vec[tau]]
+
+# Transform exclusion column ---------------------------------------------------
+
+mat[, exclusion:= pmin(n_mapping_paradigm_vec, 1L + floor(exclusion * n_mapping_paradigm_vec))]
+mat[, exclusion:= mapping_paradigm_vec[exclusion]]
+
+# PRE-COMPUTE ALL COMBINATIONS #################################################
+
+# Compute all possibilities by looping over resolutions and tau values ---------
+
+# Set parallel backend --------------------------
+
+resolutions <- sort(unique(dt$resolution))
+ncores <- max(1, parallel::detectCores() - 1)
+
+# ds_groups: named list of dataset keys to exclude by mapping category
+# mat: data.table with columns resolution, tau (in ha), exclusion (category name)
+
+idcols <- c("lon","lat","country","code","continent")
+
+tau_results <- rbindlist(
+  parallel::mclapply(resolutions, function(res) {
+    
+    dt_res_long <- dt[resolution == res]
+    if (nrow(dt_res_long) == 0L) return(NULL)
+    
+    # scenarios to run for this resolution
+    mat_res <- mat[resolution == res]
+    if (nrow(mat_res) == 0L) return(NULL)
+    
+    # datasets present at this resolution
+    ds_res <- sort(unique(dt_res_long$dataset))
+    
+    # ---- CAST ONCE per resolution  ----
+    
+    dt_res_wide_all <- dcast(dt_res_long,
+                             lon + lat + country + code + continent ~ dataset,
+                             value.var = "mha", fill = 0)
+    
+    # loop exclusion groups (few) instead of mat rows (many)
+    excl_levels <- unique(mat_res$exclusion)
+    
+    rbindlist(lapply(excl_levels, function(excl_grp) {
+      
+      # datasets to exclude for this group
+      excl_ds <- ds_groups[[excl_grp]]
+      if (is.null(excl_ds)) excl_ds <- character(0)
+      
+      use_ds <- setdiff(ds_res, excl_ds)
+      if (length(use_ds) < 2L) return(NULL)
+      
+      # taus used for THIS (resolution, exclusion-group)
+      taus_ha <- unique(mat_res[exclusion == excl_grp, tau])
+      taus_mha <- taus_ha * 1e-6
+      
+      # ---- compute A_min/A_max ONCE per exclusion group ----
+      dt_w <- dt_res_wide_all[, c(idcols, use_ds), with = FALSE]
+      
+      dt_w[, `:=`(A_min = do.call(pmin, c(.SD, list(na.rm = TRUE))),
+                  A_max = do.call(pmax, c(.SD, list(na.rm = TRUE)))), 
+           .SDcols = use_ds]
+      
+      # ---- now only loop over taus 
+      out_grp <- rbindlist(lapply(seq_along(taus_mha), function(k) {
+        
+        tau_ha  <- taus_ha[k]
+        tau_mha <- taus_mha[k]
+        
+        out <- compute_tau_fun(dt_w, tau_mha, use_ds)
+        
+        out[, `:=`(
+          tau_label = paste0(format(tau_ha, scientific = FALSE, trim = TRUE), "ha"),
+          tau_ha = tau_ha,
+          tau_mha = tau_mha,
+          resolution = res,
+          exclusion  = excl_grp
+        )]
+        
+        out
+      }), use.names = TRUE, fill = TRUE)
+      
+      out_grp
+    }), use.names = TRUE, fill = TRUE)
+    
+  }, mc.cores = ncores),
+  use.names = TRUE, fill = TRUE
+)
+
+# ARRANGE OUTPUT ##############################################################
+
+# Rename tau_ha to tau to match mat --------------------------------------------
+
+setnames(tau_results, "tau_ha", "tau")
+
+# Join all three disagreement metrics onto mat ---------------------------------
+
+mat[tau_results, on = .(resolution, tau, exclusion = exclusion),
+    `:=`(frac_disagree = i.frac_disagree,
+         frac_major_disagree = i.frac_major_disagree,
+         frac_minor_disagree = i.frac_minor_disagree,
+         share_existence = i.share_existence,
+         share_marginal = i.share_marginal)]
+
+# Reshape just these three for plotting ----------------------------------------
+
+mat_long <- melt(mat, id.vars = c("resolution", "tau", "exclusion"),
+                 measure.vars = c("frac_disagree", "frac_major_disagree",
+                                  "frac_minor_disagree", "share_existence",
+                                  "share_marginal"),
+                 variable.name = "agreement", value.name = "frac_value")
+
+# PREPARE DATA TO PLOT UNCERTAINTY #############################################
+
+# Calculate mean and quantiles by tau × agreement ------------------------------
+
+mat_sum <- mat_long[, .(frac_mean = mean(frac_value, na.rm = TRUE),
+                        frac_median = median(frac_value, na.rm = TRUE),
+                        frac_lwr = quantile(frac_value, 0.025, na.rm = TRUE),
+                        frac_upr = quantile(frac_value, 0.975, na.rm = TRUE)),
+                    .(tau, agreement)]
+
+mat_sum[, {dt_sub <- .SD
+idx <- sapply(target_tau, function(x) {
+  which.min(abs(log10(tau + 1e-12) - log10(x + 1e-12)))
+}
+)
+dt_sub[idx]
+},
+agreement
+]
+
+# Plot uncertainty -------------------------------------------------------------
+
+agreement_cols <- c(frac_disagree = "black",
+                    frac_major_disagree = "#B2182B",
+                    frac_minor_disagree = "#2166AC"  )
+
+plot_uncertainty <- mat_sum[!agreement %in% c("share_existence", "share_marginal")] %>%
+  ggplot(.,
+         aes(x = tau, y = frac_median, colour = agreement, fill = agreement)) +
+  geom_ribbon(aes(ymin = frac_lwr, ymax = frac_upr), alpha = 0.18, colour = NA) +
+  geom_line(linewidth = 1.1) +
+  scale_x_log10(labels = label_log(digits = 2)) +
+  scale_colour_manual(values = agreement_cols,
+                      breaks = c("frac_disagree",
+                                 "frac_major_disagree",
+                                 "frac_minor_disagree"),
+                      labels = c("Total",
+                                 "Major (\u2265 2 vs \u2265 2)",
+                                 "Minor (one outlier)"),
+                      name = "Disagreement") +
+  scale_fill_manual(values = agreement_cols,
+                    breaks = c("frac_disagree",
+                               "frac_major_disagree",
+                               "frac_minor_disagree"),
+                    labels = c("Total",
+                               "Major (\u2265 2 vs \u2265 2)",
+                               "Minor (one outlier)"),
+                    name = "Disagreement") +
+  labs(x = expression(tau~"(ha)"), y = "Fraction of cells") +
+  theme_AP() +
+  theme(legend.position = c(0.65, 0.77))
+
+plot_uncertainty
+
+plot_agreement <- mat_sum[agreement %in% c("share_existence", "share_marginal")] %>%
+  ggplot(., aes(x = tau, y = frac_median, colour = agreement, fill = agreement)) +
+  geom_ribbon(aes(ymin = frac_lwr, ymax = frac_upr), alpha = 0.18, colour = NA) +
+  geom_line(linewidth = 1.1) +
+  scale_colour_manual(values = exist_cols,
+                      labels = c(share_existence = "Existential",
+                                 share_marginal = "Marginal"),
+                      name = "Disagreement") +
+  scale_fill_manual(values = exist_cols,
+                    labels = c(share_existence = "Existential",
+                               share_marginal = "Marginal"),
+                    name = "Disagreement") +
+  scale_x_log10(labels = label_log(digits = 2)) +
+  labs(x = expression(tau~"(ha)"), y = "Fraction of \ndisagreeing cells") +
+  theme_AP() +
+  theme(legend.position = c(0.3, 0.55))
+
+
+plot_agreement
+
+# SENSITIVITY ANALYSIS #########################################################
+
+# Sobol' indices ---------------------------------------------------------------
+
+ind <- sobol_indices(matrices = matrices, N = N, params = params, Y
+                     = mat[, frac_disagree], R = R, boot = TRUE)
+
+plot_indices2 <- plot(ind) +
+  theme_AP() +
+  labs(x = "", y = "Fraction of variance") +
+  scale_x_discrete(labels = c(exclusion = "exclusion",
+                              resolution = "resolution",
+                              tau = expression(tau)),
+                   guide = guide_axis(n.dodge = 2)) +
+  theme(legend.position = c(0.3, 0.8))
+
+plot_indices2
+
+# SCATTERPLOTS OF OUTPUT AGAINS INTPUT #########################################
+
+label_map <- setNames(new_dataset_names, dataset_names)
+
+a2<- ggplot(mat[!exclusion == "all", c("exclusion", "frac_disagree")],
+            aes(exclusion, frac_disagree)) +
+  geom_boxplot() +
+  stat_summary_bin(fun = "mean", geom = "point",
+                   colour = "red", size = 1) +
+  scale_x_discrete(labels = label_map) +
+  scale_y_continuous(breaks = breaks_pretty(n = 3)) +
+  theme_AP() +
+  labs(x = "exclusion", y = "Fraction disagree")
+
+a2
+
+b2 <- ggplot(mat[1:N, c("resolution", "frac_disagree")],
+             aes(resolution, frac_disagree)) +
+  geom_boxplot() +
+  scale_x_discrete(labels = c(`0.2deg` = "0.2º",
+                              `0.4deg` = "0.4º",
+                              `1deg` = "1.0º")) +
+  scale_y_continuous(breaks = breaks_pretty(n = 3)) +
+  stat_summary_bin(fun = "mean", geom = "point",
+                   colour = "red", size = 1) +
+  theme_AP() +
+  labs(x = "resolution", y = "")
+
+b2
+
+c2 <- ggplot(mat[1:N, c("tau", "frac_disagree")],
+             aes(tau, frac_disagree)) +
+  geom_point(size = 0.1, alpha = 0.1) +
+  stat_summary_bin(fun = "mean", geom = "point",
+                   colour = "red", size = 1) +
+  scale_y_continuous(breaks = breaks_pretty(n = 3)) +
+  theme_AP() +
+  scale_x_log10(labels = label_log(digits = 2)) +
+  labs(x = expression(tau~"(ha)"), y = "")
+
+c2
+
+
+## ----AAI_vs_AEI_plot, fig.height=3.8, fig.width=5.5, dependson="AAI_vs_AEI"-------------
+
+# MERGE UA/SA PLOTS #############################################################
+
+top <- plot_grid(plot_uncertainty, plot_agreement, plot_indices2,
+                 ncol = 3, labels = "auto", rel_widths = c(0.4, 0.3, 0.3))
+bottom <- plot_grid(a2, b2, c2, ncol = 3, rel_widths = c(0.4, 0.3, 0.3), labels = "d")
+plot_grid(top, bottom, ncol = 1)
+
+
+## ----tau_max, dependson="uasa"----------------------------------------------------------
 
 # COMPUTE TAU MAX ##############################################################
 ################################################################################
@@ -1245,7 +1525,7 @@ country_to_continent(tau_max_results)
 tau_max_all <- tau_max_results[scenario == "all"]
 
 
-## ----define_plots_taumax, dependson="tau_max"-------------------------------------------------------------
+## ----define_plots_taumax, dependson="tau_max"-------------------------------------------
 
 # DEFINE PLOTS TAU MAX ##########################################################
 
@@ -1350,7 +1630,7 @@ plot_box <- ggplot(tau_max_results[!is.na(tau_max_ha) & tau_max_ha > 0],
 plot_box
 
 
-## ----merge_tau_max, dependson=c("tau_max", "define_plots_taumax"), fig.height=3, fig.width=5--------------
+## ----merge_tau_max, dependson=c("tau_max", "define_plots_taumax"), fig.height=3, fig.width=5----
 
 # MERGE TAU MAX PLOTS ###########################################################
 
@@ -1361,7 +1641,7 @@ top <- plot_grid(plot_ecdf, plot_stacked, plot_box, ncol = 1,
 top
 
 
-## ----plot_map, dependson=c("tau_max", "merge_tau_max", "define_plots_taumax")-----------------------------
+## ----plot_map, dependson=c("tau_max", "merge_tau_max", "define_plots_taumax")-----------
 
 # The map #######################################################################
 
@@ -1382,14 +1662,14 @@ plot_raster <- ggplot(tau_max_results, aes(lon, lat, fill = tau_bin)) +
 plot_raster
 
 
-## ----merge_plot_tau_max_map, dependson=c("plot_map", "merge_tau_max"), fig.width=5.5----------------------
+## ----merge_plot_tau_max_map, dependson=c("plot_map", "merge_tau_max"), fig.width=5.5----
 
 # MERGE PLOTS ###################################################################
 
 plot_grid(top, plot_raster, rel_widths = c(0.3, 0.7), ncol = 2, labels = c("", "d"))
 
 
-## ----datasets_tau_max, dependson="tau_max", fig.height=1.5, fig.width=5-----------------------------------
+## ----datasets_tau_max, dependson="tau_max", fig.height=1.5, fig.width=5-----------------
 
 # WHICH DATASETS DRIVE DEEP DISAGREEMENT? ---------------------------------------
 
@@ -1499,7 +1779,7 @@ influence_matrix[, dominant := fifelse(giam, "GIAM",
 table(influence_matrix$dominant)
 
 
-## ----tau_weighted, dependson=c("uasa", "tau_max"), fig.height=2, fig.width=2.3----------------------------
+## ----tau_weighted, dependson=c("uasa", "tau_max"), fig.height=2, fig.width=2.3----------
 
 # DETECTABILITY OF IRRIGATED AREA ACROSS MAPS ###################################
 ################################################################################
@@ -1555,7 +1835,7 @@ summary(dt2$tau_max_ha)
 
 
 
-## ----weighted, dependson="tau_weighted"-------------------------------------------------------------------
+## ----weighted, dependson="tau_weighted"-------------------------------------------------
 
 # WEIGHTED: CELLS WITH LARGER IRRIGATION COUNT MORE #############################
 # QUESTION: HOW MUCH IRRIGATED LAND LIES IN DISAGREEMENT? ----------------------
@@ -1661,7 +1941,7 @@ tau_diag
 # substantial irrigation systems rather than marginal patches.
 
 
-## ----country_level, dependson="tau_weighted"--------------------------------------------------------------
+## ----country_level, dependson="tau_weighted"--------------------------------------------
 
 # DOES THE DIFFERENT DATASETS IDENTIFY THE SAME TOP IRRIGATION HOTSPOTS? ########
 
@@ -1748,7 +2028,7 @@ jaccard_results[, .(min_jaccard = min(jaccard),
 # (GMIA and Meier; MIRCA2000 and Meier, etc)
 
 
-## ----national_rankings, dependson=c("tau_weighted", "country_level")--------------------------------------
+## ----national_rankings, dependson=c("tau_weighted", "country_level")--------------------
 
 # NATIONAL RANKINGS USING ALL CELLS #############################################
 
@@ -1791,7 +2071,7 @@ topN_overlap_ident <- compute_topN_overlap(country_totals_ident,
 topN_overlap_ident[order(-jaccard_topN)]
 
 
-## ----rankings_change, dependson=c("national_rankings", "country_level"), fig.width=4----------------------
+## ----rankings_change, dependson=c("national_rankings", "country_level"), fig.width=4----
 
 # HOW DO RANKINGS CHANGE WHEN NON-IDENTIFIABLE CELLS ARE MASKED? ################
 
@@ -1873,7 +2153,7 @@ p_topN <- ggplot(topN_long, aes(x = jaccard_topN, y = pair)) +
 p_topN
 
 
-## ----merge, dependson="rankings_change", fig.width=5.5----------------------------------------------------
+## ----merge, dependson="rankings_change", fig.width=5.5----------------------------------
 
 # MERGE #########################################################################
 
@@ -2051,7 +2331,7 @@ plot_shift_ranks
 
 
 
-## ----plot_tileplot, dependson="tau_weighted", fig.height=2.7, fig.width=3.5-------------------------------
+## ----plot_tileplot, dependson="tau_weighted", fig.height=2.7, fig.width=3.5-------------
 
 # COMPUTE AREA RETAINED AND LOST OF TOP 20 COUNTRIES ############################
 
@@ -2094,7 +2374,7 @@ plot_tileplot <- ggplot(country_loss, aes(dataset, country_f, fill = share_lost)
 plot_tileplot
 
 
-## ----fraction_lost_k, dependson="uasa", fig.height=2, fig.width=3-----------------------------------------
+## ----fraction_lost_k, dependson="uasa", fig.height=2, fig.width=3-----------------------
 
 # COLLAPSE ASSESSMENT ACROS A CONTINUUM OF AGREEMENT ############################
 
@@ -2222,7 +2502,7 @@ plot_curves_country <- ggplot(country_loss_by_k, aes(mean, color = factor(k), gr
 plot_curves_country
 
 
-## ----merge_k, dependson="fraction_lost_k", fig.height=2.8, fig.width=5.5----------------------------------
+## ----merge_k, dependson="fraction_lost_k", fig.height=2.8, fig.width=5.5----------------
 
 # MERGE ########################################################################
 
@@ -2232,7 +2512,7 @@ plot_grid(left, plot_collapse_profiles, ncol = 2, labels = c("", "c"),
           rel_widths = c(0.35, 0.65))
 
 
-## ----plot_agreement, dependson="fraction_lost_k", fig.height=1.5, fig.width=5.5---------------------------
+## ----plot_agreement, dependson="fraction_lost_k", fig.height=1.5, fig.width=5.5---------
 
 # PLOTS SHOWING K-OF-10 AGREEMENT ###############################################
 
@@ -2328,7 +2608,7 @@ plot_grid(p1, p2, ncol = 2, rel_widths = c(0.7, 0.3), labels = "auto")
 
 
 
-## ----plot_agreement2, dependson="plot_agreement", fig.height=2, fig.width=2-------------------------------
+## ----plot_agreement2, dependson="plot_agreement", fig.height=2, fig.width=2-------------
 
 # Plot: consensus regime plot --------------------------------------------------
 
@@ -2356,7 +2636,7 @@ plot_regime <- ggplot(dt_regime, aes(resolution, frac, fill = regime)) +
 plot_regime
 
 
-## ----crop_consequences, dependson="fraction_lost_k", fig.height=3, fig.width=4----------------------------
+## ----crop_consequences, dependson="fraction_lost_k", fig.height=3, fig.width=4----------
 
 # GLOBAL CROP PRODUCTION UDNER DIFFERENT AGREEMENT RULES ########################
 ################################################################################
@@ -2424,7 +2704,7 @@ plot_heatmap <- ggplot(plot_dt, aes(x = k, y = crop, fill = loss_vs_5)) +
 plot_heatmap
 
 
-## ----global_production, dependson="crop_consequences", fig.height=1.8, fig.width=2------------------------
+## ----global_production, dependson="crop_consequences", fig.height=1.8, fig.width=2------
 
 # Global production -------------------------------------------------------------
 
@@ -2443,7 +2723,7 @@ plot_crop_total <- ggplot(total_all,
 plot_crop_total
 
 
-## ----global_breadbaskets, dependson="crop_consequences", fig.height=3, fig.width=4------------------------
+## ----global_breadbaskets, dependson="crop_consequences", fig.height=3, fig.width=4------
 
 # COMPUTE BREADBASKETS ##########################################################
 ################################################################################
@@ -2547,7 +2827,7 @@ top <- plot_grid(plot_heatmap, plot_fraction_lost, ncol = 2, labels = "auto",
 top
 
 
-## ----irrigation_ET, dependson="fraction_lost_k", fig.height=2, fig.width=2--------------------------------
+## ----irrigation_ET, dependson="fraction_lost_k", fig.height=2, fig.width=2--------------
 
 # LOAD THE HARMONIZED GRIDS #####################################################
 
@@ -2783,7 +3063,7 @@ plot_area_fraction <- ggplot(out_plot, aes(k, area_frac_vs_k5, colour = resoluti
 plot_area_fraction
 
 
-## ----merge_ET_plots, dependson="irrigation_ET", fig.height=2, fig.width=4---------------------------------
+## ----merge_ET_plots, dependson="irrigation_ET", fig.height=2, fig.width=4---------------
 
 
 bottom <- plot_grid(plot_mean_ET, plot_total_ET, plot_area, labels = c("c", "d", "e"),
@@ -2797,7 +3077,7 @@ bottom
 plot_grid(top, bottom, ncol = 1, rel_heights = c(0.685, 0.325))
 
 
-## ----final_figure1, dependson=c("plot_uasa", "define_plots_taumax", "plot_map"), fig.width=5.5------------
+## ----final_figure1, dependson=c("plot_uasa", "define_plots_taumax", "plot_map"), fig.width=5.5----
 
 
 left <- plot_grid(plot_uncertainty1, plot_agreement1, 
@@ -2806,7 +3086,7 @@ left <- plot_grid(plot_uncertainty1, plot_agreement1,
 plot_grid(left, plot_raster, ncol = 2, rel_widths = c(0.3, 0.7), labels = c("", "d"))
 
 
-## ----final_figure1_1, dependson=c("plot_uasa", "define_plots_taumax", "plot_map"), fig.width=6------------
+## ----final_figure1_1, dependson=c("plot_uasa", "define_plots_taumax", "plot_map"), fig.width=6----
 
 
 left <- plot_grid(plot_uncertainty1, plot_agreement1, 
@@ -2851,13 +3131,13 @@ bottom <- plot_grid(plot_indices3 +
 bottom
 
 
-## ----merge_all_sa, dependson="final_figure2"--------------------------------------------------------------
+## ----merge_all_sa, dependson="final_figure2"--------------------------------------------
 
 
 plot_grid(top, middle, bottom, ncol = 1)
 
 
-## ----presence_plot, dependson="fraction_lost_k", fig.height=4, fig.width=3--------------------------------
+## ----presence_plot, dependson="fraction_lost_k", fig.height=4, fig.width=3--------------
 
 dt_pres[, classification := fifelse(
   n_pos == 0, "absence",
@@ -2883,12 +3163,12 @@ plot_classification <- ggplot(dt_pres, aes(lon, lat, fill = classification)) +
 plot_classification
 
 
-## ----merge_rasters, dependson=c("presence_plot", "plot_map"), fig.height=4, fig.width=5.5-----------------
+## ----merge_rasters, dependson=c("presence_plot", "plot_map"), fig.height=4, fig.width=5.5----
 
 plot_grid(plot_raster, plot_classification, ncol = 2, labels = "auto")
 
 
-## ----definitional_heterogeneity, fig.height=4, fig.width=5------------------------------------------------
+## ----definitional_heterogeneity, fig.height=4, fig.width=5------------------------------
 
 # STUDY OF DEFINITION HETEROGENEITY ####################################
 
@@ -2985,7 +3265,7 @@ p6 <- plot_bar_var(freq_dt, "irrigation_basis")
 plot_grid(p1, p2, p3, p4, p5, p6, ncol = 2, labels = "auto")
 
 
-## ----definitions_heatmap, dependson="definitional_heterogeneity", fig.height=5, fig.width=6---------------
+## ----definitions_heatmap, dependson="definitional_heterogeneity", fig.height=5, fig.width=6----
 
 # Dataset × definition heatmap panel -------------------------------------------
 
@@ -3027,7 +3307,7 @@ p_heat
 
 
 
-## ----summary_definitions, dependson="definitional_heterogeneity"------------------------------------------
+## ----summary_definitions, dependson="definitional_heterogeneity"------------------------
 
 # Summary metrics---------------------------------------------------------------
 
@@ -3327,7 +3607,64 @@ plot_grid(p_target, p_ext, ncol = 2, labels = "auto")
 # same locations as irrigated.
 
 
-## ----session_information----------------------------------------------------------------------------------
+## ----non_identifiability, dependson="uasa", fig.height=2.5, fig.width=4.5---------------
+
+# INSTABILITY UNDER SMALL PERTURBATIONS ########################################
+
+# Fron long to wide dataset ----------------------------------------------------
+
+dt_wide <- dcast(dt, lon + lat + country + code + continent + 
+                   resolution ~ dataset, value.var = "mha")
+
+# Run analysis -----------------------------------------------------------------
+# 1% and 2% of the grid cell
+
+inst_res <- run_instability_analysis(dt = dt_wide, dataset_names = dataset_names,
+                                     tau_vals = c(1, 2), include_full = TRUE,
+                                     include_loo = TRUE)
+
+instability_dt <- inst_res$instability
+classification_dt <- inst_res$classifications
+
+instability_sum_all <- summarize_instability(instability_dt)
+instability_sum_rel <- summarize_instability_relevant(instability_dt)
+
+print(instability_sum_all)
+print(instability_sum_rel)
+
+# CONVERGENCE TEST #############################################################
+
+# Run on exact combinations ----------------------------------------------------
+
+tau_vals <- c(1, 2)
+
+res_exact_all <- rbindlist(lapply(tau_vals, function(tt) {
+  run_by_resolution(dt = dt_wide, dataset_names = dataset_names,
+                    tau_percent = tt, mode = "exact")
+}), fill = TRUE)
+
+res_exact_all_sum <- summarize_agreement_vs_information(res_exact_all)
+
+# Prettier labels---------------------------------------------------------------
+
+res_exact_all_sum[, tau_percent:= paste(tau_percent, "%", sep = "")]
+
+# Plot results -----------------------------------------------------------------
+
+p_disagree_exact <- ggplot(res_exact_all_sum, aes(k, frac_disagree_mean)) +
+  geom_ribbon(aes(ymin = frac_disagree_q05, ymax = frac_disagree_q95), alpha = 0.2) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  facet_grid(tau_percent~ resolution) +
+  scale_x_continuous(breaks = 2:length(dataset_names)) +
+  labs(x = "Nº datasets in ensemble subset (k)",
+       y = "Fraction of cells disagreeing") +
+  theme_AP()
+
+p_disagree_exact
+
+
+## ----session_information----------------------------------------------------------------
 
 # SESSION INFORMATION ##########################################################
 

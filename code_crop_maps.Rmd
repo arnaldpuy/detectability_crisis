@@ -159,3 +159,26 @@ fwrite(gaez_crops_1_aligned,  "./datasets/crops/gaez2015_crops_irrigated_1deg_al
 ################################################################################
 
 ```
+
+\clearpage
+
+# Session information
+
+```{r session_information}
+
+# SESSION INFORMATION ##########################################################
+
+sessionInfo()
+
+## Return the machine CPU -----------------------------------------------------
+
+cat("Machine:     "); print(benchmarkme::get_cpu()$model_name)
+
+## Return number of true cores -------------------------------------------------
+
+cat("Num cores:   "); print(parallel::detectCores(logical = FALSE))
+
+## Return number of threads ---------------------------------------------------
+
+cat("Num threads: "); print(parallel::detectCores(logical = FALSE))
+```

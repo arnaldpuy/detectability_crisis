@@ -22,10 +22,6 @@ irrigation_definition_audit/**/*.json
 !code_harmonization.R
 !code_harmonization.pdf
 
-!code_crop_maps.Rmd
-!code_crop_maps.R
-!code_crop_maps.pdf
-
 !code_main_analysis.Rmd
 !code_main_analysis.R
 !code_main_analysis.pdf

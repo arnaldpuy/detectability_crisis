@@ -38,7 +38,7 @@ user of the code does not need to source them separately.
 
 ### Code
 
-We offer the code in `.R`, `.pdf` and `.Rmd`. There are four main analyses:
+We offer the code in `.R`, `.pdf` and `.Rmd`. There are three main analyses:
 
 * 1. `code_original_datasets`: workflow to transform all rasters from `tif` to tabular form.
 The analyst must download all the rasters from their respective sources. Most of

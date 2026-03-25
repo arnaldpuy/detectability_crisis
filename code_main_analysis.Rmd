@@ -1,6 +1,6 @@
 ---
 title: "Where irrigation exists is globally contested"
-subtitle: "4. Main analysis"
+subtitle: "3. Main analysis"
 author: "Arnald Puy"
 header-includes:
   - \usepackage[font=footnotesize]{caption}
@@ -39,7 +39,7 @@ knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 
 ```{r, warning=FALSE, message=FALSE, results = "hide"}
 
-# Load libraries ---------------------------------------------------------------
+# Load libraries --------------------------------------------------------------
 
 sensobol::load_packages(c("data.table", "scales", "cowplot", "tidyverse", "sensobol",
                           "here", "terra", "rnaturalearth", "sf", "countrycode", 
@@ -2497,7 +2497,7 @@ grid_long <- melt(dt_pres, id.vars = c("lon","lat","country","code",
 
 # Run calculations for multiple k (10 down to 5) -------------------------------
 
-ks <- n_datasets:5
+ks <- n_datasets:1
 loss_by_k <- rbindlist(lapply(ks, compute_loss_for_k), use.names = TRUE)
 
 # Summarize results ------------------------------------------------------------
@@ -2524,6 +2524,8 @@ plot_global_k <- global_k %>%
   geom_point()  +
   scale_color_discrete(labels = c(median_loss = "median", mean_loss = "mean"),
                        name = "") +
+  scale_x_discrete(breaks = c(10, 5, 1),
+                     limits = c(10, 1)) + 
   labs(x = "Datasets agreeing", y = "Fraction irrigation lost") +
   theme_AP() +
   scale_x_reverse() +
@@ -2558,6 +2560,7 @@ collapse_profiles[k == 5 & country %in% top10_all$country] %>%
 plot_collapse_profiles <- ggplot(collapse_profiles, aes(k, mean, group = country,
                               color = country)) +
   scale_color_discrete(name = "") +
+  scale_x_discrete(breaks = c(10, 5, 1), limits = c(10, 1)) +
   geom_line() +
   scale_x_reverse() +
   labs(x = "Datasets agreeing", y = "Fraction irrigation lost") +
@@ -2573,7 +2576,8 @@ plot_curves_country <- ggplot(country_loss_by_k, aes(mean, color = factor(k), gr
   theme_AP() +
   theme(legend.position = "right") +
   scale_x_continuous(breaks = scales::breaks_pretty(n = 3)) +
-  scale_color_viridis_d(option = "mako", direction = -1)
+  scale_color_viridis_d(option = "mako", direction = -1) +
+  guides(colour = guide_legend(ncol = 2))
 
 plot_curves_country
 ```
@@ -2714,202 +2718,541 @@ plot_regime
 
 \newpage
 
-# Consequences for crop production, water and climate
+# Consequences for crop production
 
-```{r crop_consequences, dependson="fraction_lost_k", fig.height=3, fig.width=4}
+## Extract data from EarthStat
 
-# GLOBAL CROP PRODUCTION UDNER DIFFERENT AGREEMENT RULES ########################
+```{r earthstat_data, eval=FALSE}
+
+# CODE TO RETRIEVE DATA FROM EARTHSTAT AND PRODUCE CROP DATASETS ###############
+
+# PATHS-------------------------------------------------------------------------
+
+earthstat_root <- "HarvestedAreaYield175Crops_Geotiff"
+earthstat_geotiff <- file.path(earthstat_root, "GeoTiff")
+
+agreement_file <- "./datasets/irrigated_areas_regridded/irrigated_areas_regridded_all.csv"
+
+out_dir <- "./datasets/earthstat_regridded"
+dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+
+# TARGETS-----------------------------------------------------------------------
+
+targets <- data.table(
+  res_tag = c("02", "04", "10"),
+  resolution_label = c("0.2deg", "0.4deg", "1deg"),
+  target_file = c(
+    "mha_stack_ll_02_aligned_NEAR.tif",
+    "mha_stack_ll_04_aligned_NEAR.tif",
+    "mha_stack_ll_10_aligned_NEAR.tif"
+  )
+)
+
+# FIND EARTHSTAT PRODUCTION FILES-----------------------------------------------
+
+prod_files <- list.files(
+  path = earthstat_geotiff,
+  pattern = "_Production\\.tif$",
+  recursive = TRUE,
+  full.names = TRUE
+)
+
+if (length(prod_files) == 0) stop("No *_Production.tif files found.")
+
+earthstat_index <- data.table(
+  crop = sub("_Production\\.tif$", "", basename(prod_files)),
+  file = prod_files
+)[order(crop)]
+
+fwrite(earthstat_index, file.path(out_dir, "earthstat_production_file_index.csv"))
+
+
+# LOAD AGREEMENT TABLE----------------------------------------------------------
+
+agree_all <- dt_pres
+
+# MAIN LOOP OVER TARGET RESOLUTIONS --------------------------------------------
+
+ks <- 1:10
+
+for (j in seq_len(nrow(targets))) {
+  
+  res_tag     <- targets$res_tag[j]
+  res_label   <- targets$resolution_label[j]
+  target_file <- targets$target_file[j]
+  
+  message("\n==============================")
+  message("Processing resolution ", res_label, " (", res_tag, ")")
+  message("==============================\n")
+  
+  out_dir_res <- file.path(out_dir, paste0("res_", res_tag))
+  dir.create(out_dir_res, recursive = TRUE, showWarnings = FALSE)
+  
+  template_r <- rast(target_file)[[1]]
+  values(template_r) <- NA_real_
+  
+  agree_dt <- copy(agree_all)[resolution == res_label, .(lon, lat, n_pos)]
+  agree_dt <- unique(agree_dt)
+  
+  dup_check <- agree_dt[, .N, by = .(lon, lat)][N > 1]
+  if (nrow(dup_check) > 0) {
+    stop("Duplicated lon/lat rows in agreement table for resolution ", res_label)
+  }
+  
+  setkey(agree_dt, lon, lat)
+  
+  ##############################################################################
+  # STEP 1: HARMONIZE EACH CROP TO THIS RESOLUTION
+  ##############################################################################
+  
+  qa_list <- lapply(seq_len(nrow(earthstat_index)), function(i) {
+    
+    crop <- earthstat_index$crop[i]
+    file <- earthstat_index$file[i]
+    
+    out_file <- file.path(out_dir_res, paste0(crop, "_Production_ll_", res_tag, ".tif"))
+    
+    harmonize_one_production_to_file(
+      file = file,
+      crop = crop,
+      template_r = template_r,
+      out_file = out_file,
+      method = "bilinear",
+      max_valid_value = 1e9
+    )
+  })
+  
+  qa_dt <- rbindlist(qa_list)
+  fwrite(
+    qa_dt,
+    file.path(out_dir_res, paste0("earthstat_harmonized_files_", res_tag, ".csv"))
+  )
+  
+  ##############################################################################
+  # STEP 2: SUMMARISE PER CROP
+  ##############################################################################
+  
+  crop_results   <- vector("list", length = nrow(earthstat_index))
+  global_results <- vector("list", length = nrow(earthstat_index))
+  
+  for (i in seq_len(nrow(earthstat_index))) {
+    
+    crop <- earthstat_index$crop[i]
+    file_ll <- file.path(out_dir_res, paste0(crop, "_Production_ll_", res_tag, ".tif"))
+    
+    message("Summarising ", crop, " at ", res_label, "°")
+    
+    r <- rast(file_ll)
+    
+    dt_crop <- as.data.table(as.data.frame(r, xy = TRUE, na.rm = FALSE))
+    setnames(dt_crop, c("x", "y", crop), c("lon", "lat", "production_tons"))
+    
+    dt_crop <- dt_crop[!is.na(production_tons) & production_tons > 0]
+    
+    setkey(dt_crop, lon, lat)
+    dt_crop <- agree_dt[dt_crop]
+    dt_crop[is.na(n_pos), n_pos := 0L]
+    
+    total_all <- dt_crop[, sum(production_tons, na.rm = TRUE)]
+    
+    crop_out <- data.table(
+      crop = crop,
+      k = c(0L, ks),
+      production_tons = NA_real_
+    )
+    
+    crop_out[k == 0, production_tons := total_all]
+    
+    for (kval in ks) {
+      crop_out[
+        k == kval,
+        production_tons := dt_crop[n_pos >= kval, sum(production_tons, na.rm = TRUE)]
+      ]
+    }
+    
+    tons_k1 <- crop_out[k == 1, production_tons]
+    tons_k5 <- crop_out[k == 5, production_tons]
+    
+    crop_out[, `:=`(
+      rule = ifelse(k == 0, "all_cells", paste0("k_ge_", k)),
+      resolution = res_label,
+      res_tag = res_tag,
+      share_of_all_cells = production_tons / total_all,
+      share_of_k1 = if (!is.na(tons_k1) && tons_k1 > 0) production_tons / tons_k1 else NA_real_,
+      share_of_k5 = if (!is.na(tons_k5) && tons_k5 > 0) production_tons / tons_k5 else NA_real_
+    )]
+    
+    crop_results[[i]] <- crop_out
+    global_results[[i]] <- crop_out[, .(k, production_tons)]
+    
+    rm(r, dt_crop, crop_out)
+    gc()
+  }
+  
+  ##############################################################################
+  # STEP 3: SAVE PER-CROP RESULTS
+  ##############################################################################
+  
+  prod_k_crop <- rbindlist(crop_results)
+  setorder(prod_k_crop, crop, k)
+  
+  fwrite(
+    prod_k_crop,
+    file.path(out_dir_res, paste0("earthstat_production_by_crop_k_agreement_", res_tag, ".csv"))
+  )
+  
+  ##############################################################################
+  # STEP 4: GLOBAL SUMMARY
+  ##############################################################################
+  
+  global_k <- rbindlist(global_results)[
+    , .(production_tons = sum(production_tons, na.rm = TRUE)),
+    by = k
+  ][order(k)]
+  
+  global_k[, `:=`(
+    rule = ifelse(k == 0, "all_cells", paste0("k_ge_", k)),
+    resolution = res_label,
+    res_tag = as.integer(res_tag)
+  )]
+  
+  global_all <- global_k[k == 0, production_tons]
+  global_k1  <- global_k[k == 1, production_tons]
+  global_k5  <- global_k[k == 5, production_tons]
+  
+  global_k[, `:=`(
+    share_of_all_cells = production_tons / global_all,
+    share_of_k1 = if (!is.na(global_k1) && global_k1 > 0) production_tons / global_k1 else NA_real_,
+    share_of_k5 = if (!is.na(global_k5) && global_k5 > 0) production_tons / global_k5 else NA_real_
+  )]
+  
+  print(global_k)
+  
+  fwrite(
+    global_k,
+    file.path(out_dir_res, paste0("earthstat_global_production_k_agreement_", res_tag, ".csv"))
+  )
+  
+  rm(template_r, agree_dt, qa_dt, prod_k_crop, global_k, crop_results, global_results)
+  gc()
+}
+```
+
+## Plot crop heatmap
+
+```{r earthstat_crop_heatmap, fig.height=3.3, fig.width=3.7}
+
+# PLOT HEATMAP OF CROPS ########################################################
+
+# Define files to retrieve -----------------------------------------------------
+
+files <- c(
+  "./datasets/earthstat_regridded/res_02/earthstat_production_by_crop_k_agreement_02.csv",
+  "./datasets/earthstat_regridded/res_04/earthstat_production_by_crop_k_agreement_04.csv",
+  "./datasets/earthstat_regridded/res_10/earthstat_production_by_crop_k_agreement_10.csv"
+)
+
+prod_dt <- rbindlist(lapply(files, fread), use.names = TRUE, fill = TRUE)
+
+# TOP 25 CROPS BASED ON TOTAL PRODUCTION AT 0.2 (k = 0) ------------------------
+
+top25 <- prod_dt[
+  resolution == "0.2deg" & k == 0,
+  .(baseline_tons = production_tons),
+  by = crop
+][order(-baseline_tons)][1:25]
+
+# PREPARE HEATMAP TABLE (LOSS VS k >= 1) ----------------------------------------
+
+plot_dt <- prod_dt[
+  crop %in% top25$crop & k %in% 1:10,
+  .(crop, k, resolution, share_of_k1)
+]
+
+plot_dt[, loss_vs_1:= 1 - share_of_k1]
+
+# Order crops ------------------------------------------------------------------
+
+crop_levels <- rev(top25$crop)
+plot_dt[, crop:= factor(crop, levels = crop_levels)]
+
+# Order resolution -------------------------------------------------------------
+
+plot_dt[, resolution:= factor(
+  resolution,
+  levels = c("0.2deg", "0.4deg", "1deg")
+)]
+
+# Reverse k axis (10 → 1) ------------------------------------------------------
+
+plot_dt[, k := factor(k, levels = rev(1:10))]
+
+################################################################################
+# PLOT
 ################################################################################
 
-# Read crop datasets -----------------------------------------------------------
+crop_labels <- c(
+  "apple" = "Apple",
+  "cabbage" = "Cabbage",
+  "grape" = "Grape",
+  "orange" = "Orange",
+  "banana" = "Banana",
+  "watermelon" = "Watermelon",
+  "clover" = "Clover",
+  "tomato" = "Tomato",
+  "oilpalm" = "Oil palm",
+  "grassnes" = "Grasses (NES)",
+  "sweetpotato" = "Sweet potato",
+  "barley" = "Barley",
+  "cassava" = "Cassava",
+  "soybean" = "Soybean",
+  "vegetablenes" = "Vegetables (NES)",
+  "sugarbeet" = "Sugar beet",
+  "fornes" = "Fodder (NES)",
+  "potato" = "Potato",
+  "maizefor" = "Maize (forage)",
+  "alfalfa" = "Alfalfa",
+  "wheat" = "Wheat",
+  "rice" = "Rice",
+  "maize" = "Maize",
+  "mixedgrass" = "Mixed grass",
+  "sugarcane" = "Sugarcane"
+)
 
-gaez_crops_02_aligned <- fread("./datasets/crops/gaez2015_crops_irrigated_0p2deg_aligned.csv")
-gaez_crops_04_aligned <- fread("./datasets/crops/gaez2015_crops_irrigated_0p4deg_aligned.csv")
-gaez_crops_1_aligned <- fread("./datasets/crops/gaez2015_crops_irrigated_1deg_aligned.csv")
+# The fraction of a crop’s total production that is excluded when requiring at 
+# least k irrigation maps to agree that the cell is irrigated, relative to the 
+# baseline where at least one map detects irrigation (k equal or greater than 1).
 
-# Extract crop cols-------------------------------------------------------------
+# Question that answers: “If I require k datasets to agree, how much of the 
+# production I previously considered ‘irrigated’ disappears?”
 
-crop_cols <- setdiff(names(gaez_crops_02_aligned),   
-                     c("lon", "lat", "country", "code", "continent"))
+# The heatmap shows the fraction of crop production that is lost as increasingly 
+# stringent agreement is required among irrigation datasets, relative to the 
+# baseline where at least one dataset detects irrigation. This quantifies 
+# how sensitive the attribution of production to irrigation is to disagreement 
+# in irrigated-area maps.
 
-# Run for all grids ------------------------------------------------------------
-
-res_list <- list("0.2deg" = gaez_crops_02_aligned,
-                 "0.4deg" = gaez_crops_04_aligned,
-                 "1deg"   = gaez_crops_1_aligned)
-
-results <- lapply(names(res_list), function(r) {
-  run_prod_analysis(r, res_list[[r]], dt_pres, crop_cols)
-})
-
-crop_all  <- rbindlist(lapply(results, `[[`, "crop"))
-total_all <- rbindlist(lapply(results, `[[`, "total"))
-
-total_all
-
-total_all[, .(mean = mean(loss_vs_5)), k]
-
-# PLOT #########################################################################
-
-# Heatmap ----------------------------------------------------------------------
-
-plot_dt <- crop_all[!is.na(frac_vs_5)]
-
-# Fix merged crop names only ---------------------------------------------------
-
-plot_dt[, crop:= gsub("potatoandsweetpotato", "potato & sweet potato", crop)]
-plot_dt[, crop:= gsub("yamsandotherroots", "yams & other roots", crop)]
-plot_dt[, crop:= gsub("oilpalmfruit", "oil palm fruit", crop)]
-plot_dt[, crop:= gsub("sugarbeet", "sugar beet", crop)]
-plot_dt[, crop:= gsub("sugarcane", "sugar cane", crop)]
-plot_dt[, crop:= gsub("othercereals", "other cereals", crop)]
-plot_dt[, crop:= gsub("foddercrops", "fodder crops", crop)]
-plot_dt[, crop:= gsub("cropsnes", "crops n.e.s.", crop)]
-
-plot_dt[, k:= factor(k, levels = 10:5)]
-
-plot_heatmap <- ggplot(plot_dt, aes(x = k, y = crop, fill = loss_vs_5)) +
+plot_heatmap <- ggplot(plot_dt, aes(k, crop, fill = loss_vs_1)) +
   geom_tile(color = "white") +
   scale_fill_gradientn(colours = c("green", "yellow", "orange", "red"),
-                       values = c(0, 0.5, 1),
-                       breaks = c(0, 0.5, 1),
-                       name    = "Fraction production \nlost") +
+                       values = c(0, 0.5, 1), breaks = c(0, 0.5, 1),
+                       name   = "Fraction production \nlost") +
+  scale_y_discrete(labels = crop_labels) +
+  scale_x_discrete(breaks = c("10", "5", "1")) +
   facet_wrap(~resolution, ncol = 3) +
-  labs(x = "Datasets agreeing",
-       y = NULL) +
+  labs(x = "Datasets agreeing", y = NULL) +
   theme_AP() +
-  theme(axis.text.y = element_text(size = 7),
-        legend.position = "top")
+  theme(legend.position = "top")
 
 plot_heatmap
 ```
 
-```{r global_production, dependson="crop_consequences", fig.height=1.8, fig.width=2}
+## Plot breadbasket regions 
 
-# Global production -------------------------------------------------------------
+```{r breadbasket_regions, fig.height=3.7, fig.width=3}
 
-plot_crop_total <- ggplot(total_all,
-       aes(x = k, y = loss_vs_5, group = resolution, color = resolution)) +
-  geom_line() +
-  geom_point() +
-  scale_color_manual(values = res_palette) +
-  scale_x_reverse(breaks = 10:5) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-  labs(x = "Datasets agreeing", y = "Fraction production lost",
-       color = "Resolution") +
-  theme_AP() +
-  theme(legend.position = c(0.7, 0.7))
+# DEFINE BREADBASKET REGIONS AS NUMERIC BOUNDS #################################
 
-plot_crop_total
-```
+regions_dt <- data.table(
+  region = c("Indo-Gangetic Plain",
+             "North China Plain",
+             "US High Plains",
+             "Nile Delta/Basin",
+             "Mekong Delta",
+             "Mediterranean Basin"),
+  xmin = c(68, 113, -104, 29.5, 104.5, -6),
+  xmax = c(91, 121, -96, 33.0, 106.5, 36),
+  ymin = c(21.5, 34, 32, 24.0, 8.5, 30),
+  ymax = c(33.0, 41, 44, 31.5, 11.5, 46)
+)
 
-## Effect on global breadbaskets
+# LOCATION OF HARMONIZED RASTERS ################################################
 
-```{r global_breadbaskets, dependson="crop_consequences", fig.height=3, fig.width=4}
+earthstat_dirs <- list(
+  "0.2deg" = "./datasets/earthstat_regridded/res_02",
+  "0.4deg" = "./datasets/earthstat_regridded/res_04",
+  "1deg" = "./datasets/earthstat_regridded/res_10")
 
-# COMPUTE BREADBASKETS ##########################################################
-################################################################################
+res_tags <- c("0.2deg" = "02", 
+              "0.4deg" = "04",
+              "1deg"   = "10")
 
-# LAND SEA MASK -----------------------------------------------------------------
+# CEREAL CROPS TO KEEP #########################################################
 
-grain_crops <- intersect(c("wheat", "rice", "maize", "barley", "millet",
-                           "sorghum", "othercereals"), names(gaez_crops_02_aligned))
+grain_targets <- c("wheat", "rice", "maize", "barley", "millet", "sorghum")
+grain_aliases <- c("othercereals", "cerealnes")
 
-lon_min <- min(gaez_crops_02_aligned$lon)
-lon_max <- max(gaez_crops_02_aligned$lon)
-lat_min <- min(gaez_crops_02_aligned$lat)
-lat_max <- max(gaez_crops_02_aligned$lat)
+# RUN FOR ALL THREE RESOLUTIONS ################################################
 
-template <- rast(xmin = lon_min, xmax = lon_max,
-                 ymin = lat_min, ymax = lat_max,
-                 resolution = 0.2,
-                 crs = "EPSG:4326")
+template_files <- list(
+  "0.2deg" = "mha_stack_ll_02_aligned_NEAR.tif",
+  "0.4deg" = "mha_stack_ll_04_aligned_NEAR.tif",
+  "1deg" = "mha_stack_ll_10_aligned_NEAR.tif")
 
-world <- vect(spData::world)
-land_mask <- rasterize(world, template, field = 1, background = NA)
-
-# Focus regions ----------------------------------------------------------------
-
-# PREVIOUS LAND MASK EXCLUDES WATER BODIES IN THE AREAS ########################
-
-# India: Indus Valley (Pakistan) and the Ganges Delta (Bangladesh).
-# China: Hebei-Henan-Shandong axis
-# USA: Ogallala Box; the Nebraska-to-Texas irrigation corridor.
-# Egypt: Egyptian Nile
-# Mediterranean: Spain, Italy, Greece, Turkey and North Africa
-
-regions <- list("Indo-Gangetic Plain" = ext(68, 91, 21.5, 33),
-                "North China Plain" = ext(113, 121, 34, 41),
-                "US High Plains" = ext(-104, -96, 32, 44),
-                "Nile Delta/Basin" = ext(29.5, 33, 24, 31.5),
-                "Mekong Delta" = ext(104.5, 106.5, 8.5, 11.5),
-                "Mediterranean Basin" = ext(-6, 36, 30, 46))
-
-# Run for 0.2, 0.4, 1-----------------------------------------------------------
-
-res_list <- list("0.2deg" = gaez_crops_02_aligned,
-                 "0.4deg" = gaez_crops_04_aligned,
-                 "1deg"   = gaez_crops_1_aligned)
-
-results_regions_all <- rbindlist(
-  lapply(names(res_list), function(r) {
-    compute_breadbaskets(
-      res_tag = r,
-      crops_aligned = res_list[[r]],
-      dt_pres = dt_pres,
-      regions = regions,
-      grain_crops = grain_crops,
-      land_mask = land_mask
+results_regions_all_earthstat <- rbindlist(
+  lapply(names(earthstat_dirs), function(res_label) {
+    
+    folder  <- earthstat_dirs[[res_label]]
+    res_tag <- res_tags[[res_label]]
+    
+    grain_dt <- build_cereal_sum_table(
+      folder = folder,
+      res_tag = res_tag,
+      grain_targets = grain_targets,
+      grain_aliases = grain_aliases
     )
+    
+    template_r <- rast(template_files[[res_label]])[[1]]
+    values(template_r) <- NA_real_
+    
+    out <- compute_breadbaskets_earthstat(
+      res_tag = res_label,
+      grain_prod_dt = grain_dt,
+      dt_pres = dt_pres,
+      regions_dt = regions_dt,
+      template_r = template_r
+    )
+    
+    rm(grain_dt, template_r)
+    gc()
+    
+    out
   }),
   use.names = TRUE,
   fill = TRUE
 )
 
-# Print
-results_regions_all[k %in% 8:10]
+# SAVE RESULTS #################################################################
 
-# PLOT: FRACTION OF GRAIN PRODUCTION LOST ######################################
+dir.create("./datasets/earthstat_regridded", recursive = TRUE, showWarnings = FALSE)
 
-plot_fraction_lost <- ggplot(results_regions_all, aes(k, loss_vs_5,
-                                                      color = resolution,
-                                                      group = resolution)) +
+fwrite(results_regions_all_earthstat,
+       "./datasets/earthstat_regridded/earthstat_breadbasket_grain_losses.csv")
+
+# SUMMARY STATISTICS ###########################################################
+
+print(results_regions_all_earthstat)
+
+tmp_summary <- results_regions_all_earthstat[
+  , .(
+    min_frac_5 = min(frac_vs_5, na.rm = TRUE),
+    max_frac_5 = max(frac_vs_5, na.rm = TRUE),
+    min_loss_5 = min(loss_vs_5, na.rm = TRUE),
+    max_loss_5 = max(loss_vs_5, na.rm = TRUE),
+    min_frac_1 = min(frac_vs_1, na.rm = TRUE),
+    max_frac_1 = max(frac_vs_1, na.rm = TRUE),
+    min_loss_1 = min(loss_vs_1, na.rm = TRUE),
+    max_loss_1 = max(loss_vs_1, na.rm = TRUE)
+  ),
+  by = .(region, k)
+] %>%
+  .[k %in% 5:10]
+
+tmp_summary[k %in% 9:10 & 
+              region %in% c("Nile Delta/Basin", "Indo-Gangetic Plain", 
+                            "Mekong Delta"), 
+            .(region, min_loss_1, max_loss_1)]
+
+# PLOT: LOSS RELATIVE TO k >= 1 ################################################
+
+plot_dt <- copy(results_regions_all_earthstat)
+
+# Keep only the main metric
+plot_dt <- plot_dt[!is.na(loss_vs_1)]
+
+# Order regions
+region_levels <- c(
+  "Indo-Gangetic Plain",
+  "North China Plain",
+  "US High Plains",
+  "Nile Delta/Basin",
+  "Mekong Delta",
+  "Mediterranean Basin"
+)
+
+plot_dt[, region:= factor(region, levels = region_levels)]
+
+# Order resolutions
+plot_dt[, resolution := factor(resolution, levels = c("0.2deg", "0.4deg", "1deg"))]
+
+# Keep k numeric so reverse scale works cleanly
+plot_dt[, k:= as.integer(k)]
+
+plot_breadbaskets <- ggplot(plot_dt, aes(k, loss_vs_1, colour = resolution, 
+                                         group = resolution)) +
   geom_line() +
   geom_point() +
-  scale_x_reverse(breaks = 10:5) +
+  facet_wrap(~region, ncol = 2) +
+  scale_x_reverse(breaks = c(10, 5, 1),
+                  limits = c(10, 1)) +
+  scale_y_continuous(limits = c(0, 1),
+                     breaks = c(0, 0.25, 0.5, 0.75, 1)) +
+  labs(x = "Datasets agreeing", y = "Fraction production lost",
+       colour = "Resolution") +
   scale_color_manual(values = res_palette) +
-  labs(x = "Datasets agreeing",
-       y = "Fraction production lost",
-       color = "Resolution") +
-  facet_wrap(~region, ncol = 3) +
-  scale_y_continuous(breaks = breaks_pretty(n = 3)) +
   theme_AP() +
   theme(legend.position = "top")
 
-plot_fraction_lost
+plot_breadbaskets
 ```
 
-```{r merge_crop_breadbasket, dependson=c("global_breadbaskets", "crop_consequences"), fig.height=5.3, fig.width=3.7}
+```{r merge_crop_breadbasket_plots, dependson=c("breadbasket_regions", "earthstat_crop_heatmap"), fig.height=3.2, fig.width=5.7}
 
-# MERGE #########################################################################
+top2 <- plot_grid(plot_heatmap, plot_breadbaskets, ncol = 2, rel_widths = c(0.55, 0.45), 
+                 labels = "auto")
 
-plot_grid(plot_heatmap, plot_fraction_lost, ncol = 1, labels = "auto", rel_heights = c(0.55, 0.45))
+top2
 ```
 
-```{r merge_crop_breadbasket2, dependson=c("global_breadbaskets", "crop_consequences"), fig.height=3, fig.width=5.7}
+## Plot global
 
-# MERGE #########################################################################
+```{r global_crop, fig.height=2, fig.width=2}
 
-plot_fraction_lost <- plot_fraction_lost + 
-  facet_wrap(~region, ncol = 2)
+# LOAD GLOBAL RESULTS ##########################################################
 
-top <- plot_grid(plot_heatmap, plot_fraction_lost, ncol = 2, labels = "auto", 
-                 rel_widths =  c(0.55, 0.45))
+files <- c(
+  "./datasets/earthstat_regridded/res_02/earthstat_global_production_k_agreement_02.csv",
+  "./datasets/earthstat_regridded/res_04/earthstat_global_production_k_agreement_04.csv",
+  "./datasets/earthstat_regridded/res_10/earthstat_global_production_k_agreement_10.csv"
+)
 
-top
+global_dt <- rbindlist(lapply(files, fread), use.names = TRUE, fill = TRUE)
+
+# KEEP k = 10:1 ################################################################
+
+global_dt <- global_dt[k %in% 1:10]
+
+# compute loss relative to k >= 1
+global_dt[, loss_vs_1:= 1 - share_of_k1]
+
+# order resolution
+global_dt[, resolution:= factor(resolution, levels = c("0.2deg", "0.4deg", "1deg"))]
+
+# Print 
+global_dt[k %in% c(1, 5, 10), .(k, resolution, loss_vs_1)]
+
+# PLOT #########################################################################
+
+plot_global <- ggplot(global_dt, aes(k, loss_vs_1, colour = resolution, group = resolution)) +
+  geom_line() +
+  geom_point() +
+  scale_x_reverse(breaks = c(10, 5, 1),
+                  limits = c(10, 1)) +
+  scale_y_continuous(limits = c(0, 1),
+                     breaks = c(0, 0.25, 0.5, 0.75, 1)) +
+  scale_color_manual(values = res_palette) +
+  labs(x = "Datasets agreeing", y = "Fraction production lost",
+       colour = "Resolution") +
+  theme_AP() +
+  theme(
+    legend.position = c(0.7, 0.7))
+
+plot_global
 ```
 
-## Irrigation-induced evapotranspiration
+# Consequences for irrigation-induced evapotranspiration
+
+## Extract CESM data
 
 ```{r irrigation_ET, dependson="fraction_lost_k", fig.height=2, fig.width=2}
 
@@ -2988,7 +3331,7 @@ names(dET_dt) <- names(templates)
 # COMPUTE K-OF-10 AGREEMENT WITH CELL JOINS ####################################
 
 resolutions <- c("0.2deg", "0.4deg", "1deg")
-ks <- 5:10
+ks <- 1:10
 
 # Compute ----------------------------------------------------------------------
 
@@ -3079,7 +3422,7 @@ if (total_col == "sum_dET_m3day_areaweighted") {
 
 # Keep only k = 5, ..., 10------------------------------------------------------
 
-out_plot <- out_plot[k %in% 5:10]
+out_plot <- out_plot[k %in% 1:10]
 
 # Plot mean increase in irrigation-induced ET ----------------------------------
 # (average irrigation-induced evapotranspiration change per grid cell)
@@ -3090,7 +3433,7 @@ plot_mean_ET <- ggplot(out_plot, aes(k, mean_dET_mmday, colour = resolution,
   geom_point() +
   labs(x = "Datasets agreeing", 
        y = expression(atop("Mean " * Delta * ET[irr], "(mm d"^{-1} * ")"))) +
-  scale_x_reverse(breaks = 10:5) +
+  scale_x_reverse(breaks = c(10, 5, 1)) +
   scale_color_manual(values = res_palette) +
   theme_AP() +
   theme(legend.position = "none")
@@ -3104,14 +3447,14 @@ plot_total_ET <- ggplot(out_plot, aes(k, total_km3day, colour = resolution, grou
   geom_line() +
   geom_point() +
   labs(x = "Datasets agreeing", y = total_ylab) +
-  scale_x_reverse(breaks = 10:5) +
+  scale_x_reverse(breaks = c(10, 5, 1)) +
   scale_color_manual(values = res_palette) +
   theme_AP() +
   theme(legend.position = "none")
 
 # Plot area with irrigation-induced ET retained under k-------------------------
 
-out_plot <- copy(out_k_all)[k %in% 5:10]
+out_plot <- copy(out_k_all)[k %in% 1:10]
 
 # convert m2 to Mha -----------------------------------
 out_plot[, area_Mha:= area_m2_with_dET_k / 1e10]
@@ -3124,7 +3467,7 @@ plot_area <- ggplot(out_plot, aes(k, area_Mha, colour = resolution, group = reso
   geom_line() +
   geom_point() +
   labs(x = "Datasets agreeing", y = "Area irrigation \nsignal (Mha)") +
-  scale_x_reverse(breaks = 10:5) +
+  scale_x_reverse(breaks = c(10, 5, 1)) +
   scale_color_manual(values = res_palette) +
   theme_AP() +
   theme(legend.position = "none")
@@ -3138,7 +3481,7 @@ plot_area_fraction <- ggplot(out_plot, aes(k, area_frac_vs_k5, colour = resoluti
   geom_point() +
   labs(x = "Datasets agreeing",
        y = expression("Area retaining "~Delta*ET~" (fraction of k=5)")) +
-  scale_x_reverse(breaks = 10:5) +
+  scale_x_reverse(breaks = 10:1) +
   scale_y_continuous(limits = c(0, 1.05)) +
   scale_color_manual(values = res_palette) +
   theme_AP() +
@@ -3146,6 +3489,8 @@ plot_area_fraction <- ggplot(out_plot, aes(k, area_frac_vs_k5, colour = resoluti
 
 plot_area_fraction
 ```
+
+## Merge figures
 
 ```{r merge_ET_plots, dependson="irrigation_ET", fig.height=2, fig.width=4}
 
@@ -3155,10 +3500,10 @@ bottom <- plot_grid(plot_mean_ET, plot_total_ET, plot_area, labels = c("c", "d",
 bottom
 ```
 
-```{r merge_ET_plots2, dependson=c("merge_ET_plots", "merge_crop_breadbasket2"), fig.height=4.3, fig.width=5.5}
+```{r merge_ET_plots2, dependson=c("merge_ET_plots", "merge_crop_breadbasket2", "merge_crop_breadbasket_plots"), fig.height=4.3, fig.width=5.5}
 
 
-plot_grid(top, bottom, ncol = 1, rel_heights = c(0.685, 0.325))
+plot_grid(top2, bottom, ncol = 1, rel_heights = c(0.685, 0.325))
 ```
 
 \newpage

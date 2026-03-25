@@ -47,8 +47,7 @@ To facilitate this process, we provide links to the papers in the section `Maps`
 For those that are under embargo or the map link is no longer active, the analyst needs to contact 
 the authors of the study directly. 
 * 2. `code_harmonization`: harmonization of all irrigated area datasets at 0.2º, 0.4º and 1º.
-* 3. `code_crop_maps`: extraction of global irrigated crop production from [GAEZ+2015](https://www.nature.com/articles/s41597-021-01115-2).
-* 4. `code_main_analysis`: analysis of the detectability of irrigated areas at the grid cell level.
+* 3. `code_main_analysis`: analysis of the detectability of irrigated areas at the grid cell level.
 
 ### Irrigation definition audit
 

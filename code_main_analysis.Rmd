@@ -2524,11 +2524,9 @@ plot_global_k <- global_k %>%
   geom_point()  +
   scale_color_discrete(labels = c(median_loss = "median", mean_loss = "mean"),
                        name = "") +
-  scale_x_discrete(breaks = c(10, 5, 1),
-                     limits = c(10, 1)) + 
   labs(x = "Datasets agreeing", y = "Fraction irrigation lost") +
   theme_AP() +
-  scale_x_reverse() +
+  scale_x_reverse(breaks = c(10, 5, 1)) +
   theme(legend.position = c(0.7, 0.8))
 
 plot_global_k
@@ -2560,9 +2558,8 @@ collapse_profiles[k == 5 & country %in% top10_all$country] %>%
 plot_collapse_profiles <- ggplot(collapse_profiles, aes(k, mean, group = country,
                               color = country)) +
   scale_color_discrete(name = "") +
-  scale_x_discrete(breaks = c(10, 5, 1), limits = c(10, 1)) +
   geom_line() +
-  scale_x_reverse() +
+  scale_x_reverse(breaks = c(10:1)) +
   labs(x = "Datasets agreeing", y = "Fraction irrigation lost") +
   theme_AP()
 
@@ -2575,7 +2572,7 @@ plot_curves_country <- ggplot(country_loss_by_k, aes(mean, color = factor(k), gr
   labs(x = "Fraction irrigation lost", y = "Density", color = "Datasets \nagreeing") +
   theme_AP() +
   theme(legend.position = "right") +
-  scale_x_continuous(breaks = scales::breaks_pretty(n = 3)) +
+  scale_x_continuous(breaks = breaks_pretty(n = 3)) +
   scale_color_viridis_d(option = "mako", direction = -1) +
   guides(colour = guide_legend(ncol = 2))
 
@@ -3036,7 +3033,7 @@ plot_heatmap <- ggplot(plot_dt, aes(k, crop, fill = loss_vs_1)) +
   geom_tile(color = "white") +
   scale_fill_gradientn(colours = c("green", "yellow", "orange", "red"),
                        values = c(0, 0.5, 1), breaks = c(0, 0.5, 1),
-                       name   = "Fraction production \nlost") +
+                       name = "Fraction of production \nnot attributed to irrigation") +
   scale_y_discrete(labels = crop_labels) +
   scale_x_discrete(breaks = c("10", "5", "1")) +
   facet_wrap(~resolution, ncol = 3) +
@@ -3187,7 +3184,7 @@ plot_breadbaskets <- ggplot(plot_dt, aes(k, loss_vs_1, colour = resolution,
                   limits = c(10, 1)) +
   scale_y_continuous(limits = c(0, 1),
                      breaks = c(0, 0.25, 0.5, 0.75, 1)) +
-  labs(x = "Datasets agreeing", y = "Fraction production lost",
+  labs(x = "Datasets agreeing", y = "Fraction of production not attributed to irrigation",
        colour = "Resolution") +
   scale_color_manual(values = res_palette) +
   theme_AP() +
@@ -3241,7 +3238,7 @@ plot_global <- ggplot(global_dt, aes(k, loss_vs_1, colour = resolution, group = 
   scale_y_continuous(limits = c(0, 1),
                      breaks = c(0, 0.25, 0.5, 0.75, 1)) +
   scale_color_manual(values = res_palette) +
-  labs(x = "Datasets agreeing", y = "Fraction production lost",
+  labs(x = "Datasets agreeing", y = "Fraction of production not \nattributed to irrigation",
        colour = "Resolution") +
   theme_AP() +
   theme(

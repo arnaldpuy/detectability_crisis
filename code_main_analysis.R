@@ -1,10 +1,10 @@
-## ----setup, include=FALSE--------------------------------------------------------------------
+## ----setup, include=FALSE----------------------------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 
 
-## ----warning=FALSE, message=FALSE, results = "hide"------------------------------------------
+## ----warning=FALSE, message=FALSE, results = "hide"--------------------------------------------
 
-# Load libraries --------------------------------------------------------------
+# Load libraries ---------------------------------------------------------------
 
 sensobol::load_packages(c("data.table", "scales", "cowplot", "tidyverse", "sensobol",
                           "here", "terra", "rnaturalearth", "sf", "countrycode", 
@@ -70,7 +70,7 @@ res_palette <- c("0.2deg" = "lightblue",
                  "1deg"   = "darkblue")
 
 
-## ----uasa------------------------------------------------------------------------------------
+## ----uasa--------------------------------------------------------------------------------------
 
 # LOAD ALL DATASETS ############################################################
 
@@ -260,7 +260,7 @@ mat_long <- melt(mat, id.vars = c("resolution", "tau", "exclusion"),
                  variable.name = "agreement", value.name = "frac_value")
 
 
-## ----plot_uasa, dependson="uasa", fig.height=3, fig.width=3----------------------------------
+## ----plot_uasa, dependson="uasa", fig.height=3, fig.width=3------------------------------------
 
 # PREPARE DATA TO PLOT UNCERTAINTY ##############################################
 
@@ -417,7 +417,7 @@ c1 <- ggplot(mat[1:N, c("tau", "frac_disagree")],
 c1
 
 
-## ----all_maps, dependson=c("uasa", "plot_uasa"), fig.height=1.5, fig.width=5.8---------------
+## ----all_maps, dependson=c("uasa", "plot_uasa"), fig.height=1.5, fig.width=5.8-----------------
 
 # PLOT DATASETS #################################################################
 
@@ -447,7 +447,7 @@ dt[resolution == "0.2deg"] %>%
 
 
 
-## ----merge_uasa, dependson="plot_uasa", fig.height=3.5, fig.width=5.5------------------------
+## ----merge_uasa, dependson="plot_uasa", fig.height=3.5, fig.width=5.5--------------------------
 
 # MERGE UA/SA PLOTS #############################################################
 
@@ -457,7 +457,7 @@ bottom <- plot_grid(a1, b1, c1, ncol = 3, rel_widths = c(0.5, 0.25, 0.25), label
 plot_grid(top, bottom, ncol = 1)
 
 
-## ----effects_coarsening, dependson="uasa", fig.height=1.8, fig.width=1.8---------------------
+## ----effects_coarsening, dependson="uasa", fig.height=1.8, fig.width=1.8-----------------------
 
 # DOES ZOOMING OUT REDUCE DISAGREEMENT? #########################################
 
@@ -550,7 +550,7 @@ plot_grid(p1, p2, p3, ncol = 3, labels = "auto")
 
 
 
-## ----uasa_on_mapping_paradigm, dependson = "uasa", echo=FALSE, fig.height=3, fig.width=3-----
+## ----uasa_on_mapping_paradigm, dependson = "uasa", echo=FALSE, fig.height=3, fig.width=3-------
 
 # MAPPING PARADIGM EXCLUSION UA/SA ##############################################
 
@@ -823,7 +823,7 @@ c2 <- ggplot(mat[1:N, c("tau", "frac_disagree")],
 c2
 
 
-## ----merge_dataset_classes, fig.height=3.8, fig.width=5.5------------------------------------
+## ----merge_dataset_classes, fig.height=3.8, fig.width=5.5--------------------------------------
 
 # MERGE UA/SA PLOTS #############################################################
 
@@ -833,7 +833,7 @@ bottom <- plot_grid(a2, b2, c2, ncol = 3, rel_widths = c(0.4, 0.3, 0.3), labels 
 plot_grid(top, bottom, ncol = 1)
 
 
-## ----uasa_on_weights, dependson = "uasa", echo=FALSE, fig.height=3, fig.width=3--------------
+## ----uasa_on_weights, dependson = "uasa", echo=FALSE, fig.height=3, fig.width=3----------------
 
 # UA/SA ON THE WEIGHTING SCHEME #################################################
 
@@ -1142,7 +1142,7 @@ d3 <- ggplot(mat[1:N, c("weight", "frac_disagree")],
 d3
 
 
-## ----plot_weights, dependson="uasa_on_weights", fig.height=3.8, fig.width=5.5----------------
+## ----plot_weights, dependson="uasa_on_weights", fig.height=3.8, fig.width=5.5------------------
 
 # MERGE UA/SA PLOTS #############################################################
 
@@ -1152,7 +1152,7 @@ bottom <- plot_grid(a3, b3, c3, d3, ncol = 4, rel_widths = c(0.35, 0.25, 0.2, 0.
 plot_grid(top, bottom, ncol = 1)
 
 
-## ----AAI_vs_AEI, dependson="uasa", fig.height=3, fig.width=3---------------------------------
+## ----AAI_vs_AEI, dependson="uasa", fig.height=3, fig.width=3-----------------------------------
 
 # MAPPING PARADIGM EXCLUSION UA/SA ##############################################
 
@@ -1422,7 +1422,7 @@ c2 <- ggplot(mat[1:N, c("tau", "frac_disagree")],
 c2
 
 
-## ----AAI_vs_AEI_plot, fig.height=3.8, fig.width=5.5, dependson="AAI_vs_AEI"------------------
+## ----AAI_vs_AEI_plot, fig.height=3.8, fig.width=5.5, dependson="AAI_vs_AEI"--------------------
 
 # MERGE UA/SA PLOTS #############################################################
 
@@ -1432,7 +1432,7 @@ bottom <- plot_grid(a2, b2, c2, ncol = 3, rel_widths = c(0.4, 0.3, 0.3), labels 
 plot_grid(top, bottom, ncol = 1)
 
 
-## ----tau_max, dependson="uasa"---------------------------------------------------------------
+## ----tau_max, dependson="uasa"-----------------------------------------------------------------
 
 # COMPUTE TAU MAX ##############################################################
 ################################################################################
@@ -1525,7 +1525,7 @@ country_to_continent(tau_max_results)
 tau_max_all <- tau_max_results[scenario == "all"]
 
 
-## ----define_plots_taumax, dependson="tau_max"------------------------------------------------
+## ----define_plots_taumax, dependson="tau_max"--------------------------------------------------
 
 # DEFINE PLOTS TAU MAX ##########################################################
 
@@ -1641,7 +1641,7 @@ top <- plot_grid(plot_ecdf, plot_stacked, plot_box, ncol = 1,
 top
 
 
-## ----plot_map, dependson=c("tau_max", "merge_tau_max", "define_plots_taumax")----------------
+## ----plot_map, dependson=c("tau_max", "merge_tau_max", "define_plots_taumax")------------------
 
 # The map #######################################################################
 
@@ -1662,14 +1662,14 @@ plot_raster <- ggplot(tau_max_results, aes(lon, lat, fill = tau_bin)) +
 plot_raster
 
 
-## ----merge_plot_tau_max_map, dependson=c("plot_map", "merge_tau_max"), fig.width=5.5---------
+## ----merge_plot_tau_max_map, dependson=c("plot_map", "merge_tau_max"), fig.width=5.5-----------
 
 # MERGE PLOTS ###################################################################
 
 plot_grid(top, plot_raster, rel_widths = c(0.3, 0.7), ncol = 2, labels = c("", "d"))
 
 
-## ----datasets_tau_max, dependson="tau_max", fig.height=1.5, fig.width=5----------------------
+## ----datasets_tau_max, dependson="tau_max", fig.height=1.5, fig.width=5------------------------
 
 # WHICH DATASETS DRIVE DEEP DISAGREEMENT? ---------------------------------------
 
@@ -1779,7 +1779,7 @@ influence_matrix[, dominant := fifelse(giam, "GIAM",
 table(influence_matrix$dominant)
 
 
-## ----tau_weighted, dependson=c("uasa", "tau_max"), fig.height=2, fig.width=2.3---------------
+## ----tau_weighted, dependson=c("uasa", "tau_max"), fig.height=2, fig.width=2.3-----------------
 
 # DETECTABILITY OF IRRIGATED AREA ACROSS MAPS ###################################
 ################################################################################
@@ -1835,7 +1835,7 @@ summary(dt2$tau_max_ha)
 
 
 
-## ----weighted, dependson="tau_weighted"------------------------------------------------------
+## ----weighted, dependson="tau_weighted"--------------------------------------------------------
 
 # WEIGHTED: CELLS WITH LARGER IRRIGATION COUNT MORE #############################
 # QUESTION: HOW MUCH IRRIGATED LAND LIES IN DISAGREEMENT? ----------------------
@@ -1941,7 +1941,7 @@ tau_diag
 # substantial irrigation systems rather than marginal patches.
 
 
-## ----country_level, dependson="tau_weighted"-------------------------------------------------
+## ----country_level, dependson="tau_weighted"---------------------------------------------------
 
 # DOES THE DIFFERENT DATASETS IDENTIFY THE SAME TOP IRRIGATION HOTSPOTS? ########
 
@@ -2028,7 +2028,7 @@ jaccard_results[, .(min_jaccard = min(jaccard),
 # (GMIA and Meier; MIRCA2000 and Meier, etc)
 
 
-## ----national_rankings, dependson=c("tau_weighted", "country_level")-------------------------
+## ----national_rankings, dependson=c("tau_weighted", "country_level")---------------------------
 
 # NATIONAL RANKINGS USING ALL CELLS #############################################
 
@@ -2071,7 +2071,7 @@ topN_overlap_ident <- compute_topN_overlap(country_totals_ident,
 topN_overlap_ident[order(-jaccard_topN)]
 
 
-## ----rankings_change, dependson=c("national_rankings", "country_level"), fig.width=4---------
+## ----rankings_change, dependson=c("national_rankings", "country_level"), fig.width=4-----------
 
 # HOW DO RANKINGS CHANGE WHEN NON-IDENTIFIABLE CELLS ARE MASKED? ################
 
@@ -2153,7 +2153,7 @@ p_topN <- ggplot(topN_long, aes(x = jaccard_topN, y = pair)) +
 p_topN
 
 
-## ----merge, dependson="rankings_change", fig.width=5.5---------------------------------------
+## ----merge, dependson="rankings_change", fig.width=5.5-----------------------------------------
 
 # MERGE #########################################################################
 
@@ -2331,7 +2331,7 @@ plot_shift_ranks
 
 
 
-## ----plot_tileplot, dependson="tau_weighted", fig.height=2.7, fig.width=3.5------------------
+## ----plot_tileplot, dependson="tau_weighted", fig.height=2.7, fig.width=3.5--------------------
 
 # COMPUTE AREA RETAINED AND LOST OF TOP 20 COUNTRIES ############################
 
@@ -2374,7 +2374,7 @@ plot_tileplot <- ggplot(country_loss, aes(dataset, country_f, fill = share_lost)
 plot_tileplot
 
 
-## ----fraction_lost_k, dependson="uasa", fig.height=2, fig.width=3----------------------------
+## ----fraction_lost_k, dependson="uasa", fig.height=2, fig.width=3------------------------------
 
 # COLLAPSE ASSESSMENT ACROS A CONTINUUM OF AGREEMENT ############################
 
@@ -2448,11 +2448,9 @@ plot_global_k <- global_k %>%
   geom_point()  +
   scale_color_discrete(labels = c(median_loss = "median", mean_loss = "mean"),
                        name = "") +
-  scale_x_discrete(breaks = c(10, 5, 1),
-                     limits = c(10, 1)) + 
   labs(x = "Datasets agreeing", y = "Fraction irrigation lost") +
   theme_AP() +
-  scale_x_reverse() +
+  scale_x_reverse(breaks = c(10, 5, 1)) +
   theme(legend.position = c(0.7, 0.8))
 
 plot_global_k
@@ -2484,9 +2482,8 @@ collapse_profiles[k == 5 & country %in% top10_all$country] %>%
 plot_collapse_profiles <- ggplot(collapse_profiles, aes(k, mean, group = country,
                               color = country)) +
   scale_color_discrete(name = "") +
-  scale_x_discrete(breaks = c(10, 5, 1), limits = c(10, 1)) +
   geom_line() +
-  scale_x_reverse() +
+  scale_x_reverse(breaks = c(10:1)) +
   labs(x = "Datasets agreeing", y = "Fraction irrigation lost") +
   theme_AP()
 
@@ -2499,14 +2496,14 @@ plot_curves_country <- ggplot(country_loss_by_k, aes(mean, color = factor(k), gr
   labs(x = "Fraction irrigation lost", y = "Density", color = "Datasets \nagreeing") +
   theme_AP() +
   theme(legend.position = "right") +
-  scale_x_continuous(breaks = scales::breaks_pretty(n = 3)) +
+  scale_x_continuous(breaks = breaks_pretty(n = 3)) +
   scale_color_viridis_d(option = "mako", direction = -1) +
   guides(colour = guide_legend(ncol = 2))
 
 plot_curves_country
 
 
-## ----merge_k, dependson="fraction_lost_k", fig.height=2.8, fig.width=5.5---------------------
+## ----merge_k, dependson="fraction_lost_k", fig.height=2.8, fig.width=5.5-----------------------
 
 # MERGE ########################################################################
 
@@ -2516,7 +2513,7 @@ plot_grid(left, plot_collapse_profiles, ncol = 2, labels = c("", "c"),
           rel_widths = c(0.35, 0.65))
 
 
-## ----plot_agreement, dependson="fraction_lost_k", fig.height=1.5, fig.width=5.5--------------
+## ----plot_agreement, dependson="fraction_lost_k", fig.height=1.5, fig.width=5.5----------------
 
 # PLOTS SHOWING K-OF-10 AGREEMENT ###############################################
 
@@ -2612,7 +2609,7 @@ plot_grid(p1, p2, ncol = 2, rel_widths = c(0.7, 0.3), labels = "auto")
 
 
 
-## ----plot_agreement2, dependson="plot_agreement", fig.height=2, fig.width=2------------------
+## ----plot_agreement2, dependson="plot_agreement", fig.height=2, fig.width=2--------------------
 
 # Plot: consensus regime plot --------------------------------------------------
 
@@ -2640,7 +2637,7 @@ plot_regime <- ggplot(dt_regime, aes(resolution, frac, fill = regime)) +
 plot_regime
 
 
-## ----earthstat_data, eval=FALSE--------------------------------------------------------------
+## ----earthstat_data, eval=FALSE----------------------------------------------------------------
 # 
 # # CODE TO RETRIEVE DATA FROM EARTHSTAT AND PRODUCE CROP DATASETS ###############
 # 
@@ -2856,7 +2853,7 @@ plot_regime
 # }
 
 
-## ----earthstat_crop_heatmap, fig.height=3.3, fig.width=3.7-----------------------------------
+## ----earthstat_crop_heatmap, fig.height=3.3, fig.width=3.7-------------------------------------
 
 # PLOT HEATMAP OF CROPS ########################################################
 
@@ -2952,7 +2949,7 @@ plot_heatmap <- ggplot(plot_dt, aes(k, crop, fill = loss_vs_1)) +
   geom_tile(color = "white") +
   scale_fill_gradientn(colours = c("green", "yellow", "orange", "red"),
                        values = c(0, 0.5, 1), breaks = c(0, 0.5, 1),
-                       name   = "Fraction production \nlost") +
+                       name = "Fraction of production \nnot attributed to irrigation") +
   scale_y_discrete(labels = crop_labels) +
   scale_x_discrete(breaks = c("10", "5", "1")) +
   facet_wrap(~resolution, ncol = 3) +
@@ -2963,7 +2960,7 @@ plot_heatmap <- ggplot(plot_dt, aes(k, crop, fill = loss_vs_1)) +
 plot_heatmap
 
 
-## ----breadbasket_regions, fig.height=3.7, fig.width=3----------------------------------------
+## ----breadbasket_regions, fig.height=3.7, fig.width=3------------------------------------------
 
 # DEFINE BREADBASKET REGIONS AS NUMERIC BOUNDS #################################
 
@@ -3101,7 +3098,7 @@ plot_breadbaskets <- ggplot(plot_dt, aes(k, loss_vs_1, colour = resolution,
                   limits = c(10, 1)) +
   scale_y_continuous(limits = c(0, 1),
                      breaks = c(0, 0.25, 0.5, 0.75, 1)) +
-  labs(x = "Datasets agreeing", y = "Fraction production lost",
+  labs(x = "Datasets agreeing", y = "Fraction of production not attributed to irrigation",
        colour = "Resolution") +
   scale_color_manual(values = res_palette) +
   theme_AP() +
@@ -3118,7 +3115,7 @@ top2 <- plot_grid(plot_heatmap, plot_breadbaskets, ncol = 2, rel_widths = c(0.55
 top2
 
 
-## ----global_crop, fig.height=2, fig.width=2--------------------------------------------------
+## ----global_crop, fig.height=2, fig.width=2----------------------------------------------------
 
 # LOAD GLOBAL RESULTS ##########################################################
 
@@ -3153,7 +3150,7 @@ plot_global <- ggplot(global_dt, aes(k, loss_vs_1, colour = resolution, group = 
   scale_y_continuous(limits = c(0, 1),
                      breaks = c(0, 0.25, 0.5, 0.75, 1)) +
   scale_color_manual(values = res_palette) +
-  labs(x = "Datasets agreeing", y = "Fraction production lost",
+  labs(x = "Datasets agreeing", y = "Fraction of production not \nattributed to irrigation",
        colour = "Resolution") +
   theme_AP() +
   theme(
@@ -3162,198 +3159,7 @@ plot_global <- ggplot(global_dt, aes(k, loss_vs_1, colour = resolution, group = 
 plot_global
 
 
-## ----crop_consequences, dependson="fraction_lost_k", fig.height=3, fig.width=4---------------
-
-# GLOBAL CROP PRODUCTION UDNER DIFFERENT AGREEMENT RULES ########################
-################################################################################
-
-# Read crop datasets -----------------------------------------------------------
-
-gaez_crops_02_aligned <- fread("./datasets/crops/gaez2015_crops_irrigated_0p2deg_aligned.csv")
-gaez_crops_04_aligned <- fread("./datasets/crops/gaez2015_crops_irrigated_0p4deg_aligned.csv")
-gaez_crops_1_aligned <- fread("./datasets/crops/gaez2015_crops_irrigated_1deg_aligned.csv")
-
-# Extract crop cols-------------------------------------------------------------
-
-crop_cols <- setdiff(names(gaez_crops_02_aligned),   
-                     c("lon", "lat", "country", "code", "continent"))
-
-# Run for all grids ------------------------------------------------------------
-
-res_list <- list("0.2deg" = gaez_crops_02_aligned,
-                 "0.4deg" = gaez_crops_04_aligned,
-                 "1deg"   = gaez_crops_1_aligned)
-
-results <- lapply(names(res_list), function(r) {
-  run_prod_analysis(r, res_list[[r]], dt_pres, crop_cols)
-})
-
-crop_all  <- rbindlist(lapply(results, `[[`, "crop"))
-total_all <- rbindlist(lapply(results, `[[`, "total"))
-
-total_all
-
-total_all[, .(mean = mean(loss_vs_5)), k]
-
-# PLOT #########################################################################
-
-# Heatmap ----------------------------------------------------------------------
-
-plot_dt <- crop_all[!is.na(frac_vs_5)]
-
-# Fix merged crop names only ---------------------------------------------------
-
-plot_dt[, crop:= gsub("potatoandsweetpotato", "potato & sweet potato", crop)]
-plot_dt[, crop:= gsub("yamsandotherroots", "yams & other roots", crop)]
-plot_dt[, crop:= gsub("oilpalmfruit", "oil palm fruit", crop)]
-plot_dt[, crop:= gsub("sugarbeet", "sugar beet", crop)]
-plot_dt[, crop:= gsub("sugarcane", "sugar cane", crop)]
-plot_dt[, crop:= gsub("othercereals", "other cereals", crop)]
-plot_dt[, crop:= gsub("foddercrops", "fodder crops", crop)]
-plot_dt[, crop:= gsub("cropsnes", "crops n.e.s.", crop)]
-
-plot_dt[, k:= factor(k, levels = 10:5)]
-
-plot_heatmap <- ggplot(plot_dt, aes(x = k, y = crop, fill = loss_vs_5)) +
-  geom_tile(color = "white") +
-  scale_fill_gradientn(colours = c("green", "yellow", "orange", "red"),
-                       values = c(0, 0.5, 1),
-                       breaks = c(0, 0.5, 1),
-                       name    = "Fraction production \nlost") +
-  facet_wrap(~resolution, ncol = 3) +
-  labs(x = "Datasets agreeing",
-       y = NULL) +
-  theme_AP() +
-  theme(axis.text.y = element_text(size = 7),
-        legend.position = "top")
-
-plot_heatmap
-
-
-## ----global_production, dependson="crop_consequences", fig.height=1.8, fig.width=2-----------
-
-# Global production -------------------------------------------------------------
-
-plot_crop_total <- ggplot(total_all,
-       aes(x = k, y = loss_vs_5, group = resolution, color = resolution)) +
-  geom_line() +
-  geom_point() +
-  scale_color_manual(values = res_palette) +
-  scale_x_reverse(breaks = 10:5) +
-  scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-  labs(x = "Datasets agreeing", y = "Fraction production lost",
-       color = "Resolution") +
-  theme_AP() +
-  theme(legend.position = c(0.7, 0.7))
-
-plot_crop_total
-
-
-## ----global_breadbaskets, dependson="crop_consequences", fig.height=3, fig.width=4-----------
-
-# COMPUTE BREADBASKETS ##########################################################
-################################################################################
-
-# LAND SEA MASK -----------------------------------------------------------------
-
-grain_crops <- intersect(c("wheat", "rice", "maize", "barley", "millet",
-                           "sorghum", "othercereals"), names(gaez_crops_02_aligned))
-
-lon_min <- min(gaez_crops_02_aligned$lon)
-lon_max <- max(gaez_crops_02_aligned$lon)
-lat_min <- min(gaez_crops_02_aligned$lat)
-lat_max <- max(gaez_crops_02_aligned$lat)
-
-template <- rast(xmin = lon_min, xmax = lon_max,
-                 ymin = lat_min, ymax = lat_max,
-                 resolution = 0.2,
-                 crs = "EPSG:4326")
-
-world <- vect(spData::world)
-land_mask <- rasterize(world, template, field = 1, background = NA)
-
-# Focus regions ----------------------------------------------------------------
-
-# PREVIOUS LAND MASK EXCLUDES WATER BODIES IN THE AREAS ########################
-
-# India: Indus Valley (Pakistan) and the Ganges Delta (Bangladesh).
-# China: Hebei-Henan-Shandong axis
-# USA: Ogallala Box; the Nebraska-to-Texas irrigation corridor.
-# Egypt: Egyptian Nile
-# Mediterranean: Spain, Italy, Greece, Turkey and North Africa
-
-regions <- list("Indo-Gangetic Plain" = ext(68, 91, 21.5, 33),
-                "North China Plain" = ext(113, 121, 34, 41),
-                "US High Plains" = ext(-104, -96, 32, 44),
-                "Nile Delta/Basin" = ext(29.5, 33, 24, 31.5),
-                "Mekong Delta" = ext(104.5, 106.5, 8.5, 11.5),
-                "Mediterranean Basin" = ext(-6, 36, 30, 46))
-
-# Run for 0.2, 0.4, 1-----------------------------------------------------------
-
-res_list <- list("0.2deg" = gaez_crops_02_aligned,
-                 "0.4deg" = gaez_crops_04_aligned,
-                 "1deg"   = gaez_crops_1_aligned)
-
-results_regions_all <- rbindlist(
-  lapply(names(res_list), function(r) {
-    compute_breadbaskets(
-      res_tag = r,
-      crops_aligned = res_list[[r]],
-      dt_pres = dt_pres,
-      regions = regions,
-      grain_crops = grain_crops,
-      land_mask = land_mask
-    )
-  }),
-  use.names = TRUE,
-  fill = TRUE
-)
-
-# Print
-results_regions_all[k %in% 8:10]
-
-# PLOT: FRACTION OF GRAIN PRODUCTION LOST ######################################
-
-plot_fraction_lost <- ggplot(results_regions_all, aes(k, loss_vs_5,
-                                                      color = resolution,
-                                                      group = resolution)) +
-  geom_line() +
-  geom_point() +
-  scale_x_reverse(breaks = 10:5) +
-  scale_color_manual(values = res_palette) +
-  labs(x = "Datasets agreeing",
-       y = "Fraction production lost",
-       color = "Resolution") +
-  facet_wrap(~region, ncol = 3) +
-  scale_y_continuous(breaks = breaks_pretty(n = 3)) +
-  theme_AP() +
-  theme(legend.position = "top")
-
-plot_fraction_lost
-
-
-## ----merge_crop_breadbasket, dependson=c("global_breadbaskets", "crop_consequences"), fig.height=5.3, fig.width=3.7----
-
-# MERGE #########################################################################
-
-plot_grid(plot_heatmap, plot_fraction_lost, ncol = 1, labels = "auto", rel_heights = c(0.55, 0.45))
-
-
-## ----merge_crop_breadbasket2, dependson=c("global_breadbaskets", "crop_consequences"), fig.height=3, fig.width=5.7----
-
-# MERGE ########################################################################
-
-plot_fraction_lost <- plot_fraction_lost + 
-  facet_wrap(~region, ncol = 2)
-
-top <- plot_grid(plot_heatmap, plot_fraction_lost, ncol = 2, labels = "auto", 
-                 rel_widths =  c(0.55, 0.45))
-
-top
-
-
-## ----irrigation_ET, dependson="fraction_lost_k", fig.height=2, fig.width=2-------------------
+## ----irrigation_ET, dependson="fraction_lost_k", fig.height=2, fig.width=2---------------------
 
 # LOAD THE HARMONIZED GRIDS #####################################################
 
@@ -3493,8 +3299,6 @@ out_k_all <- rbindlist(lapply(resolutions, function(res) {
 
 out_k_all
 
-
-
 # PLOT #########################################################################
 
 # Condition ifesle -------------------------------------------------------------
@@ -3511,7 +3315,6 @@ total_col <- if ("sum_dET_m3day_areaweighted" %in% names(out_k_all)) {
 
 out_plot <- copy(out_k_all)
 
-
 if (total_col == "sum_dET_m3day_areaweighted") {
   out_plot[, total_km3day := get(total_col) / 1e9]
   total_ylab <- "Total irrigation-\ninduced ET (km³ d-¹)"
@@ -3523,7 +3326,6 @@ if (total_col == "sum_dET_m3day_areaweighted") {
 }
 
 # Keep only k = 5, ..., 10------------------------------------------------------
-
 
 out_plot <- out_plot[k %in% 1:10]
 
@@ -3562,8 +3364,6 @@ out_plot <- copy(out_k_all)[k %in% 1:10]
 # convert m2 to Mha -----------------------------------
 out_plot[, area_Mha:= area_m2_with_dET_k / 1e10]
 
-
-
 # also show contraction relative to k=5 within each resolution
 out_plot[, area_frac_vs_k5:= area_m2_with_dET_k / area_m2_with_dET_k[k == 5], by = resolution]
 
@@ -3595,7 +3395,7 @@ plot_area_fraction <- ggplot(out_plot, aes(k, area_frac_vs_k5, colour = resoluti
 plot_area_fraction
 
 
-## ----merge_ET_plots, dependson="irrigation_ET", fig.height=2, fig.width=4--------------------
+## ----merge_ET_plots, dependson="irrigation_ET", fig.height=2, fig.width=4----------------------
 
 
 bottom <- plot_grid(plot_mean_ET, plot_total_ET, plot_area, labels = c("c", "d", "e"),
@@ -3663,13 +3463,13 @@ bottom <- plot_grid(plot_indices3 +
 bottom
 
 
-## ----merge_all_sa, dependson="final_figure2"-------------------------------------------------
+## ----merge_all_sa, dependson="final_figure2"---------------------------------------------------
 
 
 plot_grid(top, middle, bottom, ncol = 1)
 
 
-## ----presence_plot, dependson="fraction_lost_k", fig.height=4, fig.width=3-------------------
+## ----presence_plot, dependson="fraction_lost_k", fig.height=4, fig.width=3---------------------
 
 dt_pres[, classification := fifelse(
   n_pos == 0, "absence",
@@ -3695,12 +3495,12 @@ plot_classification <- ggplot(dt_pres, aes(lon, lat, fill = classification)) +
 plot_classification
 
 
-## ----merge_rasters, dependson=c("presence_plot", "plot_map"), fig.height=4, fig.width=5.5----
+## ----merge_rasters, dependson=c("presence_plot", "plot_map"), fig.height=4, fig.width=5.5------
 
 plot_grid(plot_raster, plot_classification, ncol = 2, labels = "auto")
 
 
-## ----definitional_heterogeneity, fig.height=4, fig.width=5-----------------------------------
+## ----definitional_heterogeneity, fig.height=4, fig.width=5-------------------------------------
 
 # STUDY OF DEFINITION HETEROGENEITY ####################################
 
@@ -3839,7 +3639,7 @@ p_heat
 
 
 
-## ----summary_definitions, dependson="definitional_heterogeneity"-----------------------------
+## ----summary_definitions, dependson="definitional_heterogeneity"-------------------------------
 
 # Summary metrics---------------------------------------------------------------
 
@@ -4139,7 +3939,7 @@ plot_grid(p_target, p_ext, ncol = 2, labels = "auto")
 # same locations as irrigated.
 
 
-## ----non_identifiability, dependson="uasa", fig.height=2.5, fig.width=4.5--------------------
+## ----non_identifiability, dependson="uasa", fig.height=2.5, fig.width=4.5----------------------
 
 # INSTABILITY UNDER SMALL PERTURBATIONS ########################################
 
@@ -4196,7 +3996,7 @@ p_disagree_exact <- ggplot(res_exact_all_sum, aes(k, frac_disagree_mean)) +
 p_disagree_exact
 
 
-## ----session_information---------------------------------------------------------------------
+## ----session_information-----------------------------------------------------------------------
 
 # SESSION INFORMATION ##########################################################
 

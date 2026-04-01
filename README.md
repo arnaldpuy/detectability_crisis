@@ -49,15 +49,23 @@ the authors of the study directly.
 * 2. `code_harmonization`: harmonization of all irrigated area datasets at 0.2º, 0.4º and 1º.
 * 3. `code_main_analysis`: analysis of the detectability of irrigated areas at the grid cell level.
 
-### Irrigation definition audit
+## Irrigated area masks
 
-The folder `irrigation definition audit` contains the full extraction pipeline used 
-to audit how irrigation is defined across datasets, including the classification 
-script, the constrained prompt and the resulting dataset of definitions.
+We include the irrigation masks resulting from our study. The masks indicate how 
+many datasets agree that there is irrigation in a given grid cell (detection 
+limit set at $>1º$), from ($k = 0$; 0 datasets) to ($k = 10$; 10 datasets). 
+They can be found in the `irrigation masks/` folder, with one  file per resolution: 
+
+* `irrigation_mask_02.csv` (0.2°).
+* `irrigation_mask_04.csv` (0.4°).
+* `irrigation_mask_1.csv` (1°). 
+
+Columns: `lon` (longitude), `lat` (latitude), `country`, `code`, `continent`, 
+`resolution`, `k` (number of datasets).
 
 ## Citation
 
-If you use this workflow, please cite:
+If you use this workflow or the irrigated area masks, please cite:
 
 Puy, A. et al. (2026). Code of Where irrigation exists is globally contested. 
 Zenodo. doi: 10.5281/zenodo.19001232.

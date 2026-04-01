@@ -4,9 +4,9 @@
 # Keep gitignore itself
 !.gitignore
 
-# ---- KEEP ENTIRE IRRIGATION AUDIT FOLDER ----
-!irrigation_definition_audit/
-!irrigation_definition_audit/**
+# ---- KEEP ENTIRE IRRIGATION MASKS FOLDER ----
+!irrigation_masks/
+!irrigation_masks/**
 
 # ---- EXCLUDE JSON FILES INSIDE IT ----
 irrigation_definition_audit/*.json

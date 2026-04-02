@@ -67,8 +67,8 @@ Columns: `lon` (longitude), `lat` (latitude), `country`, `code`, `continent`,
 
 If you use this workflow or the irrigated area masks, please cite:
 
-Puy, A. et al. (2026). Code of Where irrigation exists is globally contested. 
-Zenodo. doi: 10.5281/zenodo.19001232.
+A. Puy, O. Richards, S. N. Linga, S. Flinders, C. Aguiló-Rivera, J. Larsen. (2026). 
+Code of Where irrigation exists is globally contested. Zenodo. doi: 10.5281/zenodo.19001232.
 
 ## License
 

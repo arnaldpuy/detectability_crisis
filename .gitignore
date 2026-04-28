@@ -29,6 +29,9 @@ irrigation_definition_audit/**/*.json
 # README
 !README.md
 
+# SETH, CARMEN, OLIVIA AND SAM'S FILE
+!irrigated_area_policy_SM.pdf
+
 # ---- FUNCTIONS FOLDER (keep everything) ----
 !functions/
 !functions/**

@@ -1,4 +1,5 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19001232.svg)](https://doi.org/10.5281/zenodo.19001232)
+
 # Where irrigation exists is globally contested
 
 [Arnald Puy](https://www.arnaldpuy.com/), Olivia Richards, Seth N. Linga, Samuel
@@ -143,6 +144,16 @@ Core detectability analysis at the grid-cell level. The key steps are:
 
 6. **Stability tests** (`non_identifiability_tests`) — leave-one-out and multi-τ perturbation analyses confirm that disagreement is not an artefact of any single dataset or threshold choice.
 
+## Supplementary material
+
+* `irrigated_area_policy_SM.pdf` — *Policies using irrigated area statistics*. A review of policy documents, programmes 
+and reports from major institutions (FAO Sustainable Development Goals, FAO Hand-in-Hand, 
+World Bank, Asian Development Bank, etc.) that rely on irrigated area datasets to 
+inform decisions on land degradation, food security, water scarcity and agricultural 
+investment. The document catalogues which datasets each initiative cites and 
+highlights that policy decisions are typically based on a single 
+dataset (most often GMIA).
+
 ## Repository structure
 
 ```
@@ -151,6 +162,7 @@ code_detectability_irrigated_areas/
 ├── code_original_datasets.{R,Rmd,pdf}    # Ingest raw rasters → long-format CSV
 ├── code_harmonization.{R,Rmd,pdf}         # Regrid all datasets to 0.2°/0.4°/1°
 ├── code_main_analysis.{R,Rmd,pdf}         # Core detectability analysis
+├── irrigated_area_policy_SM.pdf            # Supplementary material: policies that rely on irrigated-area datasets
 ├── functions/                              # Custom R functions (sourced automatically)
 │   ├── add_country_continent.R
 │   ├── compute_country_totals.R

@@ -3184,7 +3184,7 @@ plot_breadbaskets <- ggplot(plot_dt, aes(k, loss_vs_1, colour = resolution,
                   limits = c(10, 1)) +
   scale_y_continuous(limits = c(0, 1),
                      breaks = c(0, 0.25, 0.5, 0.75, 1)) +
-  labs(x = "Datasets agreeing", y = "Fraction of production not attributed to irrigation",
+  labs(x = "Datasets agreeing", y = "Fraction of production outside the irrigation footprint",
        colour = "Resolution") +
   scale_color_manual(values = res_palette) +
   theme_AP() +

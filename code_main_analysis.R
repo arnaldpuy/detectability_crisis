@@ -99,6 +99,17 @@ crop_native <- rast(crop_path)
 dt <- filter_long_dt_by_crop_mask_aggregated(dt = dt, crop_native = crop_native,
                                              rule = "any")
 
+country_level_irrigated_areas <- dt[, .(mha = sum(mha)), .(country, continent, dataset, resolution)]
+
+dt[, .(mha = sum(mha)), .(country, continent, dataset, resolution)] %>%
+  .[continent == "Europe",
+     .(spain_mha = sum(mha[country == "Spain"]),
+       europe_mha = sum(mha),
+       spain_share_pct = 100 * sum(mha[country == "Spain"]) / sum(mha)),
+     by = .(dataset, resolution)]
+
+fwrite(country_level_irrigated_areas, "country_level_irrigated_areas.csv")
+
 # DEFINE TAU GRID ##############################################################
 
 # Vector with the datasets used ------------------------------------------------

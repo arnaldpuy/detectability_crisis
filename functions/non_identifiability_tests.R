@@ -7,10 +7,14 @@
 # RESOLUTION SPECIFIC TAU ######################################################
 
 get_tau_mha <- function(tau_percent) {
+  # Nominal grid-cell area (Mha) at each resolution, so that tau_percent is a
+  # constant fraction of the cell across resolutions. Cell area scales with the
+  # square of the linear resolution: ~0.05 Mha at 0.2 deg, ~0.20 Mha at 0.4 deg
+  # (4x) and ~1.24 Mha at 1 deg (~25x) at the equator.
   cell_area_nominal <- c(
-    "0.2deg" = 0.05,  
-    "0.4deg" = 0.10,  
-    "1deg"   = 0.30   
+    "0.2deg" = 0.05,
+    "0.4deg" = 0.20,
+    "1deg"   = 1.24
   )
   
   tau_frac <- tau_percent / 100

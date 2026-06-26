@@ -144,6 +144,9 @@ Core detectability analysis at the grid-cell level. The key steps are:
 
 6. **Stability tests** (`non_identifiability_tests`) — leave-one-out and multi-τ perturbation analyses confirm that disagreement is not an artefact of any single dataset or threshold choice.
 
+#### 4. `code_sdg_analysis`
+Propagates the detectability crisis into the two FAO water-governance indicators **SDG 6.4.1** (change in water-use efficiency) and **SDG 6.4.2** (level of water stress). Rather than reimplementing AQUASTAT or GlobWat, it takes FAO's *published* indicator values and **swaps only the irrigation-derived input**: the GMIA-derived agricultural-withdrawal term is replaced by each of the ten maps (and by the *k*-of-10 consensus masks), holding all other inputs fixed and using the approximately linear scaling of agricultural water withdrawal with irrigated area. Official inputs are retrieved from the UNSD SDG API and the World Bank; the five-class water-stress thresholds follow the SDG 6.4.2 metadata (FAO / UN Statistics Division). The script reports how many countries change their official water-stress band across the ensemble, contrasts this with the (band-less) efficiency indicator, and produces the SDG propagation figures.
+
 ## Supplementary material
 
 * `irrigated_area_policy_SM.pdf` — *Policies using irrigated area statistics*. A review of policy documents, programmes 
@@ -162,6 +165,7 @@ code_detectability_irrigated_areas/
 ├── code_original_datasets.{R,Rmd,pdf}    # Ingest raw rasters → long-format CSV
 ├── code_harmonization.{R,Rmd,pdf}         # Regrid all datasets to 0.2°/0.4°/1°
 ├── code_main_analysis.{R,Rmd,pdf}         # Core detectability analysis
+├── code_sdg_analysis.{Rmd,pdf}            # Propagation into SDG 6.4.1 / 6.4.2 indicators
 ├── irrigated_area_policy_SM.pdf            # Supplementary material: policies that rely on irrigated-area datasets
 ├── functions/                              # Custom R functions (sourced automatically)
 │   ├── add_country_continent.R

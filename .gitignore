@@ -27,6 +27,7 @@ irrigation_definition_audit/**/*.json
 !code_main_analysis.pdf
 
 !code_sdg_analysis.Rmd
+!code_sdg_analysis.R
 !code_sdg_analysis.pdf
 
 # README

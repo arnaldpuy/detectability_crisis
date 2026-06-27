@@ -30,6 +30,10 @@ irrigation_definition_audit/**/*.json
 !code_sdg_analysis.R
 !code_sdg_analysis.pdf
 
+!code_reply_to_reviewers.Rmd
+!code_reply_to_reviewers.R
+!code_reply_to_reviewers.pdf
+
 # README
 !README.md
 

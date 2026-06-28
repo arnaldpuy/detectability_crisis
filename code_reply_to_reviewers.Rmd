@@ -246,6 +246,38 @@ data.table(
             round(100 * exist_union(wide, census)),
             round(mean(sapply(census, function(m) sum(wide[[m]])))),
             round(mean(sapply(rs,     function(m) sum(wide[[m]]))))))
+
+# Per-map global totals underlying the census/RS means (which maps each group
+# uses follows the reviewer's own classification in his comment) ---------------
+
+data.table(
+  group = c(rep("census", length(census)), rep("remote sensing", length(rs))),
+  map = c(census, rs),
+  total_mha = round(sapply(c(census, rs), function(m) sum(wide[[m]])), 1))
+```
+
+## R2.3: census products are compared on a common physical extent
+
+The reviewer notes that the census products map different quantities (area
+equipped, harvested area, monthly growing area). We do not compare these raw
+quantities: in `code_original_datasets` we reduce every product to its actual
+physical irrigated extent, so these magnitude differences do not enter the
+comparison. The variable used for each product is recorded below.
+
+```{r r23}
+
+provenance <- data.table(
+  product = c("GMIA", "SPAM2010", "MIRCA2000", "MIRCA-OS", "GAEZ+2015", "GIAM"),
+  variable_used = c("Actually irrigated area (AEI x AAI fraction), not AEI",
+                    "Physical irrigated area (SPAM 'A'), capped at cell area",
+                    "Maximum monthly irrigated area (physical extent), not summed",
+                    "Maximum monthly growing area (physical extent), not summed",
+                    "Harvested irrigated area, capped at physical cell area",
+                    "Net actually irrigated area (TAAI), not annualized (AIA)"),
+  source = c("code_original_datasets.Rmd L254", "L439, L452", "L341", "L643",
+             "L382, L399", "L205"))
+
+knitr::kable(provenance, caption = "Variable extracted for each product (code_original_datasets.Rmd). Every product is reduced to its actual physical irrigated extent, so differences between area equipped, harvested area and monthly growing area do not enter the existence comparison.")
 ```
 
 \newpage

@@ -147,6 +147,9 @@ Core detectability analysis at the grid-cell level. The key steps are:
 #### 4. `code_sdg_analysis`
 Propagates the detectability crisis into the two FAO water-governance indicators **SDG 6.4.1** (change in water-use efficiency) and **SDG 6.4.2** (level of water stress). Rather than reimplementing AQUASTAT or GlobWat, it takes FAO's *published* indicator values and **swaps only the irrigation-derived input**: the GMIA-derived agricultural-withdrawal term is replaced by each of the ten maps (and by the *k*-of-10 consensus masks), holding all other inputs fixed and using the approximately linear scaling of agricultural water withdrawal with irrigated area. Official inputs are retrieved from the UNSD SDG API and the World Bank; the five-class water-stress thresholds follow the SDG 6.4.2 metadata (FAO / UN Statistics Division). The script reports how many countries change their official water-stress band across the ensemble, contrasts this with the (band-less) efficiency indicator, and produces the SDG propagation figures.
 
+#### 5. `code_reply_to_reviewers`
+Reproduces every quantitative figure cited in our reply to the reviewers, organised by reviewer. Working from the harmonized 0.2° ensemble restricted to cropland cells, it reports: the detectability threshold *τ* as a fraction of the grid-cell area at each resolution (Reviewer 1); the temporal-heterogeneity tests showing that maps representing the same nominal year disagree on the existence of irrigation as much as maps spanning 1999–2015, and that the most recent maps record no irrigation where older maps detect it (Reviewer 1); the existential disagreement among products that map the same variable — including that the five census-based products are the single most-agreeing five-map subset, that remote-sensing and census products are not a subset of one another, and which variable is extracted for each product (Reviewer 2); and the existential and extreme disagreement by country, showing it does not track irrigation practice (Reviewer 3).
+
 ## Supplementary material
 
 * `irrigated_area_policy_SM.pdf` — *Policies using irrigated area statistics*. A review of policy documents, programmes 
@@ -166,6 +169,7 @@ code_detectability_irrigated_areas/
 ├── code_harmonization.{R,Rmd,pdf}         # Regrid all datasets to 0.2°/0.4°/1°
 ├── code_main_analysis.{R,Rmd,pdf}         # Core detectability analysis
 ├── code_sdg_analysis.{Rmd,pdf}            # Propagation into SDG 6.4.1 / 6.4.2 indicators
+├── code_reply_to_reviewers.{Rmd,pdf}      # Analyses reproducing the reply to the reviewers
 ├── irrigated_area_policy_SM.pdf            # Supplementary material: policies that rely on irrigated-area datasets
 ├── functions/                              # Custom R functions (sourced automatically)
 │   ├── add_country_continent.R

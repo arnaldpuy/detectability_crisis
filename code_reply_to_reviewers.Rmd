@@ -66,7 +66,8 @@ dt <- filter_long_dt_by_crop_mask_aggregated(dt = dt, crop_native = crop,
 
 # Cells x maps -----------------------------------------------------------------
 
-wide <- dcast(dt, lon + lat + country ~ dataset, value.var = "mha", fill = 0)
+wide <- dcast(dt, lon + lat + country + continent ~ dataset, value.var = "mha",
+              fill = 0)
 
 maps <- c("gaez_v4", "giam", "gmia", "gripc", "luh2", "meier",
           "mirca2000", "mirca_os", "nagaraj", "spam")
@@ -283,6 +284,47 @@ knitr::kable(provenance, caption = "Variable extracted for each product (code_or
 \newpage
 
 # Reviewer 3
+
+## R3.2: where the maps agree on the existence of irrigation
+
+The reviewer asks where all datasets agree on irrigation presence. We identify
+cells where all ten maps detect irrigation above the detectability threshold
+(1% of the cell, 500 ha at 0.2 deg) -- the "agreement on presence" of the
+tau_max framework -- and characterise them, including their overlap with rice
+production (EarthStat).
+
+```{r r32}
+
+Apres <- as.matrix(wide[, ..maps])
+wide[, agree_presence := rowSums(Apres > zero_tol_02 * 1e-6) == 10]
+
+# Overlap with rice production (EarthStat, regridded to 0.2 deg) ---------------
+
+rice <- rast(here("datasets", "earthstat_regridded", "res_02",
+                  "rice_Production_ll_02.tif"))
+wide[, rice_pos := { v <- terra::extract(rice, cbind(lon, lat))[, 1]
+                     !is.na(v) & v > 0 }]
+
+ag <- wide[agree_presence == TRUE]
+
+data.table(
+  metric = c("Agreement cells (all 10 above 1% of cell)",
+             "In Asia (%)",
+             "Latitude belt (10th-90th percentile)",
+             "Coincide with rice production (%)",
+             "All cropland cells coinciding with rice (%)"),
+  value = c(as.character(nrow(ag)),
+            as.character(round(100 * mean(ag$continent == "Asia"))),
+            sprintf("%.0f-%.0f N", quantile(ag$lat, .10), quantile(ag$lat, .90)),
+            as.character(round(100 * mean(ag$rice_pos))),
+            as.character(round(100 * mean(wide$rice_pos)))))
+```
+
+```{r r32_countries}
+
+knitr::kable(ag[, .N, country][order(-N)][1:5],
+             caption = "Countries with the most cells where all ten datasets agree irrigation is present (0.2 deg).")
+```
 
 ## R3.14: disagreement does not track irrigation practice
 

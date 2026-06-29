@@ -504,16 +504,19 @@ plot_range <- ggplot() +
 # swapped GMIA for any other equally-valid map. We show the countries that cross
 # at least two bands (the clearest cases); 71 cross at least one.
 
-map_label <- c(gmia = "GMIA (FAO)", gaez_v4 = "GAEZ+", giam = "GIAM",
+map_label <- c(gmia = "GMIA", gaez_v4 = "GAEZ+", giam = "GIAM",
                gripc = "GRIPC", luh2 = "LUH2", meier = "Meier",
                mirca2000 = "MIRCA2000", mirca_os = "MIRCA-OS",
                nagaraj = "Nagaraj", spam = "SPAM")
+
+# Recode the non-ASCII country name that does not render in the PDF font --------
+dt_sdg[grepl("rkiye", area), area := "Turkiye"]
 
 swap <- melt(dt_sdg[span >= 2], id.vars = c("area", "stress_total"),
              measure.vars = band_cols, variable.name = "map", value.name = "band")
 swap[, map := sub("band_", "", map)]
 swap[, map_f  := factor(map_label[map],
-                        levels = c("GMIA (FAO)", sort(map_label[names(map_label) != "gmia"])))]
+                        levels = c("GMIA", sort(map_label[names(map_label) != "gmia"])))]
 swap[, area   := factor(area, levels = dt_sdg[span >= 2][order(stress_total), area])]
 swap[, band_f := factor(band_label[band], levels = band_label)]
 

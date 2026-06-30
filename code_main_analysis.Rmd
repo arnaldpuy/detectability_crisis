@@ -3033,7 +3033,7 @@ plot_heatmap <- ggplot(plot_dt, aes(k, crop, fill = loss_vs_1)) +
   geom_tile(color = "white") +
   scale_fill_gradientn(colours = c("green", "yellow", "orange", "red"),
                        values = c(0, 0.5, 1), breaks = c(0, 0.5, 1),
-                       name = "Fraction of production \nnot attributed to irrigation") +
+                       name = "Fraction of production \noutside the irrigation footprint") +
   scale_y_discrete(labels = crop_labels) +
   scale_x_discrete(breaks = c("10", "5", "1")) +
   facet_wrap(~resolution, ncol = 3) +

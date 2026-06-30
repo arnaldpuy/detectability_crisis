@@ -10,7 +10,7 @@ global irrigated areas.
 
 ## Abstract
 
-*Irrigation is one of the most extensive human modifications of the land surface and a key driver of food production, water use and regional climate. However, the location of irrigated land has never been systematically verified at global scale. Here we show that where irrigation exists is globally contested. Across ten datasets, 60–90% of cropland grid cells disagree on whether irrigation exists at all, remaining at 40–60% when irrigation is required to exceed 1% of the cell to confirm presence. Enforcing agreement across datasets reduces the irrigated area of irrigation hotspots such as Vietnam, China or Thailand by 70%, the share of global crop production associated with irrigation by 60-90% and the global irrigation-induced evapotranspiration signal by 67%. The consequences extend to greenhouse gas accounting as irrigated area misclassifications can underestimate rice methane emissions by 58%. This disagreement persists regardless of which datasets, methods or resolutions are considered and is consistent with irrigated areas being a non-identifiable variable. The way forward requires acknowledging that whether an area is irrigated is a judgement call that data alone cannot resolve.*
+*Irrigation is one of the most extensive human modifications of the land surface and a key driver of food production, water use and regional climate. However, the location of irrigated land has never been systematically verified at global scale. Here we show that where irrigation exists is globally contested. Across ten datasets, 60–90\% of cropland grid cells disagree on whether irrigation exists at all, remaining at 40–60\% when irrigation is required to exceed 1\% of the cell to confirm presence. Enforcing agreement across datasets reduces the irrigated area of irrigation hotspots such as Vietnam, China or Thailand by 30-80\%, the share of global crop production associated with irrigation by 60-90\% and the global irrigation-induced evapotranspiration signal by $\sim67$\%. The consequences extend to water governance, where discrepancies across datasets reclassify the Sustainable Development Goal 6.4.2 water-stress status of 42\% of countries. The disagreement persists regardless of which datasets, methods or resolutions are considered and is consistent with irrigated areas being a non-identifiable variable. The way forward requires acknowledging that whether an area is irrigated is a judgement call that data alone cannot resolve.*
 
 ## Maps
 
@@ -27,46 +27,152 @@ The irrigated area maps used on our study are the following
 * [MIRCA-OS](https://www.nature.com/articles/s41597-024-04313-w)  - The Monthly Irrigated and Rainfed Crop Areas Open Source map.
 * [LUH2](https://luh.umd.edu/)  - The Land-Use Harmonization$^2$ map.
 
-## Software requirements
+## 1. System requirements
 
-The workflow is implemented entirely in **R**. The following packages are required:
+### Operating systems
+The workflow is implemented entirely in **R** and uses no operating-system-specific
+calls. It was developed and tested on:
 
-| Package | Purpose |
-|---|---|
-| `data.table` | Fast tabular data manipulation |
-| `terra` | Raster reading, reprojection and aggregation |
-| `tidyverse` | Data wrangling and plotting utilities |
-| `ggplot2` | Visualisation (loaded via `tidyverse`) |
-| `cowplot` | Multi-panel figure composition |
-| `scales` | Axis and colour scale helpers |
-| `here` | Portable file paths |
-| `sf` | Vector spatial data (country polygons) |
-| `rnaturalearth` | Country boundary data |
-| `countrycode` | Country name and code standardisation |
-| `sp` / `rworldmap` | Legacy spatial utilities (original dataset processing) |
-| `readxl` | Reading the dataset-survey Excel file |
-| `ncdf4` | Reading NetCDF climate model output |
-| `wesanderson` | Colour palettes |
-| `benchmarkme` | System information for reproducibility reporting |
-| `parallel` | Parallel computation |
-| `sensobol` | Uncertainty and sensitivity analyses |
-| `magrittr` | Pipe operator |
+* **macOS 26.5.1** (Apple Silicon, `arm64`; build 25F80).
 
-Install all packages at once with:
+It is expected to run on any recent Linux or Windows system with a working R
+installation, but it has only been tested on the macOS configuration above.
+
+### Software dependencies
+* **R ≥ 4.5** (tested on **R 4.5.2**, `aarch64-apple-darwin20`).
+* The R packages below. `parallel` ships with base R; all others are on CRAN. The
+  right-hand column lists the exact versions the workflow was tested with.
+
+| Package | Purpose | Tested version |
+|---|---|---|
+| `data.table` | Fast tabular data manipulation | 1.18.4 |
+| `terra` | Raster reading, reprojection and aggregation | 1.8.93 |
+| `sf` | Vector spatial data (country polygons) | 1.1.0 |
+| `tidyverse` | Data wrangling and plotting utilities | 2.0.0 |
+| `ggplot2` | Visualisation (loaded via `tidyverse`) | 4.0.3 |
+| `cowplot` | Multi-panel figure composition | 1.2.0 |
+| `scales` | Axis and colour scale helpers | 1.4.0 |
+| `here` | Portable file paths | 1.0.2 |
+| `rnaturalearth` | Country boundary data | 1.1.0 |
+| `countrycode` | Country name and code standardisation | 1.6.1 |
+| `sp` | Legacy spatial utilities (original dataset processing) | 2.2.1 |
+| `rworldmap` | Legacy spatial utilities (original dataset processing) | 1.3.8 |
+| `readxl` | Reading the dataset-survey Excel file | 1.4.5 |
+| `ncdf4` | Reading NetCDF climate model output | 1.24 |
+| `wesanderson` | Colour palettes | 0.3.7 |
+| `benchmarkme` | System information for reproducibility reporting | 1.0.8 |
+| `sensobol` | Uncertainty and sensitivity analyses | 1.2.0 |
+| `jsonlite` | Parsing the UNSD / World Bank API responses | 2.0.0 |
+| `magrittr` | Pipe operator | 2.0.5 |
+| `parallel` | Parallel computation | base R |
+
+(`ggplot2` and `cowplot` were tested with current development builds of 4.0.3 and
+1.2.0; the released versions behave identically for this workflow. A reproducibility
+seed of `123` is set at the start of each script.)
+
+### Hardware
+No non-standard hardware is required; the workflow runs on a standard desktop or
+laptop. Because the full pipeline ingests large global rasters and a harmonised
+ensemble of ~130,000 grid cells, **≥16 GB RAM is recommended** for the
+dataset-ingestion and harmonisation steps (the test machine had 64 GB). The demo
+and the consensus masks run comfortably in under 2 GB.
+
+## 2. Installation guide
+
+1. Install **R ≥ 4.5** from [CRAN](https://cran.r-project.org/) (optionally with
+   [RStudio](https://posit.co/download/rstudio-desktop/)).
+2. Download or clone this repository:
+   ```bash
+   git clone https://github.com/arnaldpuy/detectability_crisis.git
+   ```
+   or download the archive from [Zenodo](https://doi.org/10.5281/zenodo.19001232).
+3. Install the R dependencies:
+   ```r
+   install.packages(c(
+     "data.table", "terra", "tidyverse", "cowplot", "scales", "here", "sf",
+     "rnaturalearth", "countrycode", "sp", "rworldmap", "readxl", "ncdf4",
+     "wesanderson", "benchmarkme", "sensobol", "magrittr", "jsonlite"
+   ))
+   ```
+
+**Typical install time.** On a normal desktop with a broadband connection,
+installing the full package set takes roughly **10–30 minutes**. Most packages
+install in seconds from pre-compiled binaries; the time is dominated by `terra`,
+`sf` and `sensobol`, which may compile from source and depend on the system
+libraries GDAL, GEOS and PROJ (normally bundled with the binary builds).
+
+## 3. Demo
+
+The consensus irrigation masks shipped in `irrigation_masks/` provide a
+self-contained demo that needs no external data. The snippet below counts the grid
+cells where at least five of the ten datasets agree on irrigation presence and
+lists the leading countries:
 
 ```r
-install.packages(c(
-  "data.table", "terra", "tidyverse", "cowplot", "scales", "here", "sf",
-  "rnaturalearth", "countrycode", "sp", "rworldmap", "readxl", "ncdf4",
-  "wesanderson", "benchmarkme", "parallel", "sensobol", "magrittr"
-))
+library(data.table)
+mask <- fread("irrigation_masks/irrigation_mask_02.csv")   # 0.2 deg, 129,628 cells
+
+consensus_5 <- mask[k >= 5]              # cells where >= 5 of 10 datasets agree
+nrow(consensus_5)                        # -> 46920
+
+consensus_5[, .N, country][order(-N)][1:6]
 ```
 
-A reproducibility seed of `123` is set at the start of each script.
+**Expected output:**
 
-## Replication
+```
+> nrow(consensus_5)
+[1] 46920
 
-We provide all the functions needed to replicate our workflow in the `functions` folder.
+         country     N
+1:         China  9390
+2:         India  5595
+3: United States  5269
+4:          Iran  1766
+5:        Brazil  1675
+6:        Mexico  1276
+```
+
+**Expected run time:** under 1 second on a normal desktop.
+
+For a larger, figure-producing demo, knit `code_reply_to_reviewers.Rmd`: it
+reproduces every quantitative result in our reply to the reviewers from the
+harmonised 0.2° ensemble (run time ~1–2 minutes; requires the `datasets/` folder
+from the Zenodo archive).
+
+## 4. Instructions for use
+
+### Running the masks on your own data
+
+The consensus masks in `irrigation_masks/` are the main reusable product of the
+study. To use them in your own analysis, read the mask at the desired resolution
+and keep the cells that meet your agreement criterion *k*. For example,
+`mask[k >= 5]` retains only cells where at least half of the ten datasets agree
+that irrigation is present; join on `lon`/`lat` (grid-cell centres, WGS84) to mask
+your own gridded data. See [Irrigated area masks](#irrigated-area-masks) below for
+the full column definitions and a worked example.
+
+### Reproduction instructions
+
+The full study is reproduced by running the scripts in the order below. Each is
+provided as `.R`, `.Rmd` and a rendered `.pdf`. The raw rasters and the
+intermediate `datasets/` folder are archived on
+[Zenodo](https://doi.org/10.5281/zenodo.19001232); the consensus masks ship with
+this repository. All functions in `functions/` are sourced automatically, so they
+do not need to be loaded by hand.
+
+| Order | Script | Approximate run time |
+|---|---|---|
+| 1 | `code_original_datasets` | hours (ingests and converts all raw rasters) |
+| 2 | `code_harmonization` | ~1–2 hours |
+| 3 | `code_main_analysis` | several hours (full τ sweep, perturbation and ET analyses) |
+| 4 | `code_sdg_analysis` | ~1–2 minutes |
+| 5 | `code_reply_to_reviewers` | ~1–2 minutes |
+
+Run times are indicative for the test machine (Apple Silicon, 64 GB RAM). Steps 1–3
+are the heavy raster-processing stages; steps 4–5 run from the cached harmonised
+ensemble and are fast. The two descriptive blocks below detail the custom functions
+and each script.
 
 ### Functions
 
@@ -145,7 +251,7 @@ Core detectability analysis at the grid-cell level. The key steps are:
 6. **Stability tests** (`non_identifiability_tests`) — leave-one-out and multi-τ perturbation analyses confirm that disagreement is not an artefact of any single dataset or threshold choice.
 
 #### 4. `code_sdg_analysis`
-Propagates the detectability crisis into the two FAO water-governance indicators **SDG 6.4.1** (change in water-use efficiency) and **SDG 6.4.2** (level of water stress). Rather than reimplementing AQUASTAT or GlobWat, it takes FAO's *published* indicator values and **swaps only the irrigation-derived input**: the GMIA-derived agricultural-withdrawal term is replaced by each of the ten maps (and by the *k*-of-10 consensus masks), holding all other inputs fixed and using the approximately linear scaling of agricultural water withdrawal with irrigated area. Official inputs are retrieved from the UNSD SDG API and the World Bank; the five-class water-stress thresholds follow the SDG 6.4.2 metadata (FAO / UN Statistics Division). The script reports how many countries change their official water-stress band across the ensemble, contrasts this with the (band-less) efficiency indicator, and produces the SDG propagation figures.
+Propagates the detectability crisis into the two FAO water-governance indicators **SDG 6.4.1** (change in water-use efficiency) and **SDG 6.4.2** (level of water stress). Rather than reimplementing AQUASTAT or GlobWat, it takes FAO's *published* indicator values and **swaps only the irrigation-derived input**: the GMIA-derived agricultural-withdrawal term is replaced by each of the ten maps (and by the *k*-of-10 consensus masks), holding all other inputs fixed and using the approximately linear scaling of agricultural water withdrawal with irrigated area documented by [Puy et al](https://www.nature.com/articles/s41467-021-24508-8). Official inputs are retrieved from the UNSD SDG API and the World Bank; the five-class water-stress thresholds follow the SDG 6.4.2 metadata (FAO / UN Statistics Division). The script reports how many countries change their official water-stress band across the ensemble, contrasts this with the (band-less) efficiency indicator, and produces the SDG propagation figures.
 
 #### 5. `code_reply_to_reviewers`
 Reproduces every quantitative figure cited in our reply to the reviewers, organised by reviewer. Working from the harmonized 0.2° ensemble restricted to cropland cells, it reports: the detectability threshold *τ* as a fraction of the grid-cell area at each resolution (Reviewer 1); the temporal-heterogeneity tests showing that maps representing the same nominal year disagree on the existence of irrigation as much as maps spanning 1999–2015, and that the most recent maps record no irrigation where older maps detect it (Reviewer 1); the existential disagreement among products that map the same variable — including that the five census-based products are the single most-agreeing five-map subset, that remote-sensing and census products are not a subset of one another, and which variable is extracted for each product (Reviewer 2); and the existential and extreme disagreement by country, showing it does not track irrigation practice (Reviewer 3).

@@ -44,6 +44,10 @@ irrigation_definition_audit/**/*.json
 !functions/
 !functions/**
 
+# ---- US REGIONAL PRODUCTS AT 0.2 DEG (reply to reviewers) ----
+!us_regional_products/
+!us_regional_products/**
+
 # ---- RMarkdown artefacts ----
 *_cache/
 *_files/

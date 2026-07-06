@@ -359,6 +359,336 @@ knitr::kable(res, caption = "Existential and extreme disagreement by country (0.
 
 \newpage
 
+# Additional analyses: the non-identifiability claim
+
+The three analyses below harden the claim that irrigation presence is
+non-identifiable (manuscript, section "Irrigated areas are non-identifiable";
+Reviewer 1, comment 4; Reviewer 2, overall concern). The first counts how many
+complete global presence/absence fields are consistent with all ten maps at
+once. The second gives the rival hypothesis its best shot: if irrigation
+presence were an identifiable binary variable observed by ten imperfect
+instruments, the standard latent-class machinery for diagnostic tests without
+a gold standard (Hui and Walter 1980, Biometrics 36:167-171) should reproduce
+the observed response patterns with plausible error rates. The third tests the
+strongest surviving objection ("better data will fix it") against the
+best-in-class regional irrigation products over the United States.
+
+## Underdetermination: how many truths are consistent with the data
+
+A cell is determined only if every map forces the same answer under every
+admissible detection convention $\tau \in [0, T]$: determined-present if the
+smallest reported area exceeds the strictest admissible threshold
+($\min_d A_d > T$) and determined-absent if every map reports exactly zero.
+In all other cells both "irrigated" and "non-irrigated" are consistent with
+the ensemble, so the set of complete global presence fields consistent with
+all ten maps contains $2^{N_{\text{und}}}$ members. The universe here contains
+only cropland cells with at least one positive report, so determined-absent is
+zero by construction; adding all-zero cropland cells changes nothing because
+they are all determined-absent.
+
+```{r underdetermination}
+
+# UNDERDETERMINATION COUNT #####################################################
+
+A <- as.matrix(wide[, ..maps])
+Amin <- do.call(pmin, as.data.frame(A))
+Amax <- do.call(pmax, as.data.frame(A))
+
+underdet_fun <- function(T_ha) {
+  T_mha    <- T_ha * 1e-6
+  det_pres <- Amin > T_mha
+  und      <- !(det_pres | Amax == 0)
+  data.table(T_ha             = T_ha,
+             det_present      = sum(det_pres),
+             underdetermined  = sum(und),
+             underdet_pct     = round(100 * mean(und), 1),
+             existential_pct  = round(100 * sum(und & Amin == 0) / sum(und), 1),
+             log10_truths     = round(sum(und) * log10(2)))
+}
+
+knitr::kable(rbindlist(lapply(c(100, 500, 1000), underdet_fun)),
+             caption = "Underdetermination of irrigation presence (0.2 deg,
+             cropland). det\\_present: cells where every map exceeds the
+             strictest admissible threshold T. existential\\_pct: share of
+             underdetermined cells where at least one map reports exactly
+             zero. log10\\_truths: size (in powers of ten) of the set of
+             complete global presence fields consistent with all ten maps.")
+```
+
+At the paper's threshold ($T=500$ ha, 1\% of the cell) 92.9\% of the cells are
+underdetermined, so the ten maps are jointly consistent with $\approx
+10^{36{,}238}$ distinct global irrigation-presence fields. Existential cases
+(at least one map reports exactly zero) make up 96-99\% of the
+underdetermination across the admissible range, so the result is not driven by
+threshold sensitivity. Consistency checks: determined-present at $T=500$ ha
+(9,248 cells) equals the R3.2 agreement-cell count, and the existential set
+(117,294 cells, 90.5\%) equals the manuscript's 90\% headline.
+
+## Latent-class analysis: testing "identifiable truth plus noise"
+
+We fit $K$-class latent class models by expectation-maximisation on the
+$2^{10}$ response patterns of the binary presence matrix (conditional
+independence within class; 50 random starts per fit). Under the rival
+hypothesis, the two-class model (irrigated / non-irrigated plus per-map error
+rates) should fit. Three quantities matter: the goodness of fit of the
+two-class model, the per-map error rates it implies, and the structure of what
+it misses.
+
+```{r lca_functions}
+
+# K-CLASS LATENT CLASS MODEL VIA EM ON AGGREGATED RESPONSE PATTERNS ############
+
+lca_em <- function(pat, cnt, K, n_start = 50, tol = 1e-8, maxit = 3000,
+                   seed = 123) {
+  set.seed(seed)
+  D <- ncol(pat); n <- sum(cnt)
+  best <- NULL; logliks <- numeric(n_start)
+  for (s in seq_len(n_start)) {
+    x    <- rexp(K); pi_k <- x / sum(x)
+    rho  <- matrix(runif(K * D, .05, .95), K, D)
+    ll_old <- -Inf
+    for (it in seq_len(maxit)) {
+      logp <- sapply(seq_len(K), function(k)
+        pat %*% log(rho[k, ]) + (1 - pat) %*% log(1 - rho[k, ]) + log(pi_k[k]))
+      m    <- apply(logp, 1, max)
+      lse  <- m + log(rowSums(exp(logp - m)))
+      ll   <- sum(cnt * lse)
+      post <- exp(logp - lse)
+      w    <- post * cnt
+      Nk   <- colSums(w)
+      pi_k <- Nk / n
+      rho  <- pmin(pmax(crossprod(w, pat) / Nk, 1e-6), 1 - 1e-6)
+      if (abs(ll - ll_old) < tol) break
+      ll_old <- ll
+    }
+    logliks[s] <- ll
+    if (is.null(best) || ll > best$ll)
+      best <- list(ll = ll, pi = pi_k, rho = rho, post = post)
+  }
+  npar <- (K - 1) + K * D
+  c(best, list(npar = npar, bic = -2 * best$ll + npar * log(n),
+               logliks = logliks))
+}
+
+# Fit K = 1-4, report fit, error rates, residual dependence, 3-class profile --
+
+lca_report_fun <- function(Y, label) {
+  D    <- ncol(Y); n <- nrow(Y)
+  code <- as.integer(Y %*% 2^(0:(D - 1)))
+  tab  <- data.table(code = code)[, .N, by = code][order(code)]
+  pat  <- t(sapply(tab$code, function(z) as.integer(intToBits(z)[1:D])))
+  cnt  <- tab$N
+  fits <- lapply(1:4, function(K) lca_em(pat, cnt, K))
+
+  comp <- data.table(K = 1:4,
+                     loglik = sapply(fits, function(f) round(f$ll, 1)),
+                     npar   = sapply(fits, function(f) f$npar),
+                     BIC    = sapply(fits, function(f) round(f$bic, 1)))
+
+  f2  <- fits[[2]]
+  irr <- which.max(rowMeans(f2$rho)); no <- setdiff(1:2, irr)
+  err <- data.table(map = maps,
+                    FNR = round(1 - f2$rho[irr, ], 3),
+                    FPR = round(f2$rho[no, ], 3))[order(-FNR)]
+
+  logp <- sapply(1:2, function(k)
+    pat %*% log(f2$rho[k, ]) + (1 - pat) %*% log(1 - f2$rho[k, ]) +
+      log(f2$pi[k]))
+  m  <- apply(logp, 1, max)
+  e  <- n * exp(m + log(rowSums(exp(logp - m))))
+  G2 <- 2 * sum(cnt * log(cnt / e))
+  df <- nrow(pat) - 1 - f2$npar
+
+  P_obs <- crossprod(Y) / n
+  P_exp <- f2$pi[1] * tcrossprod(f2$rho[1, ]) +
+           f2$pi[2] * tcrossprod(f2$rho[2, ])
+  R  <- (P_obs - P_exp) * 100
+  ut <- which(upper.tri(R), arr.ind = TRUE)
+  res <- data.table(m1 = maps[ut[, 1]], m2 = maps[ut[, 2]],
+                    resid = round(R[ut], 2))[order(-abs(resid))][1:5]
+
+  f3  <- fits[[3]]
+  ord <- order(rowMeans(f3$rho))
+  pr  <- data.table(class = sprintf("pi = %.2f", f3$pi[ord]),
+                    round(as.data.table(f3$rho[ord, , drop = FALSE]), 2))
+  setnames(pr, c("class", maps))
+  post3 <- f3$post[match(code, tab$code), ]
+  mid_share <- 100 * mean(apply(post3, 1, which.max) == ord[2])
+  ll_r  <- round(f2$logliks, 1)
+
+  cat("\n####", label, "----", n, "cells,", nrow(pat), "patterns\n")
+  print(comp)
+  cat(sprintf("\n2-class fit: G2 = %.0f on df = %d (G2/df = %.1f)\n",
+              G2, df, G2 / df))
+  cat(sprintf("2-class multistart: %d distinct loglik modes in 50 starts\n",
+              length(unique(ll_r))))
+  cat("\nImplied per-map error rates (2-class):\n"); print(err)
+  cat("\nLargest residual pairwise associations (obs - exp P(both = 1), x100):\n")
+  print(res)
+  cat(sprintf("\n3-class model: BIC improvement over 2-class = %.0f;",
+              fits[[2]]$bic - f3$bic))
+  cat(sprintf(" middle-class posterior share = %.1f%%\n", mid_share))
+  cat("3-class item-probability profiles (rows ordered low to high):\n")
+  print(pr)
+  invisible(fits)
+}
+```
+
+```{r lca_run}
+
+# RUN AT BOTH DETECTION CONVENTIONS ############################################
+
+fits_tau0   <- lca_report_fun(1L * (A > 0),    "tau = 0 (any positive area)")
+fits_tau500 <- lca_report_fun(1L * (A > 5e-4), "tau = 500 ha (1% of cell)")
+```
+
+The two-class model is decisively rejected at both conventions ($G^2/\text{df}
+= 377$ at $\tau=0$ and $82$ at $\tau=500$ ha), and it is not rescued by
+estimation problems: all 50 starts converge to a single mode. Rescuing the
+rival hypothesis requires implausible instruments (at $\tau=500$ ha, LUH2
+missing 62\% of truly irrigated cells, GIAM 45\%, GRIPC 40\%; at $\tau=0$,
+GRIPC false-alarming in 53\% of truly non-irrigated cells). The residual
+dependence concentrates within mapping families (GIAM-GRIPC on the
+remote-sensing side, MIRCA2000-SPAM on the census side), so the maps are not
+independent witnesses, and the third latent class that the data demand (BIC
+improvement of 46,000-116,000) is a census-positive / remote-sensing-negative
+class: the latent structure required by the data encodes how the maps were
+made, not only whether irrigation exists.
+
+## The best-products test over the United States
+
+If existential disagreement reflected data quality alone, the best available
+irrigation products should agree on where irrigation exists. We test this in
+the country with the best irrigation data: we compare LANID (Xie and Lark
+2021; 30 m, Landsat, annual), MIrAD-US (Pervez and Brown 2010; 250 m, MODIS
+anchored to USDA county statistics; version 4) and AIM-HPA (Deines et al.
+2019; 30 m, Landsat, High Plains Aquifer only) in the two years all three
+cover (2012 and 2017). Decision rule, stated before computing: existential
+disagreement below 5\% of union cells supports the claim that better data
+restore identifiability; disagreement comparable to the ten-map global
+ensemble over the same cells refutes it.
+
+Each product was downloaded from its public archive (LANID:
+doi:10.5281/zenodo.5548555; MIrAD-US: doi:10.5066/P9NA3EO8; AIM-HPA:
+doi:10.4211/hs.a371fd69d41b4232806d81e17fe4efcb) and aggregated from its
+native equal-area grid to the paper's 0.2$^\circ$ grid by warp-summing the
+binary irrigated pixels and multiplying by the pixel area (0.09 ha at 30 m,
+6.25 ha at 250 m), yielding irrigated hectares per cell. The chunk below
+documents the aggregation; it is not evaluated because it requires about 700
+MB of raw rasters and several hours of warping. The aggregated table ships
+with the repository (\texttt{us\_regional\_products/}). As a sanity check, the
+CONUS totals are mutually consistent: LANID 23.1 (2012) and 24.2 Mha (2017);
+MIrAD 22.5 and 23.8 Mha.
+
+```{r us_test_aggregation, eval=FALSE}
+
+# AGGREGATION OF THE US REGIONAL PRODUCTS (documentation; not run) #############
+
+template <- rast(xmin = -126, xmax = -66, ymin = 24, ymax = 50,
+                 resolution = 0.2, crs = "EPSG:4326")
+
+agg_to_ha <- function(f, irr_val, px_ha) {
+  ir <- (rast(f) == irr_val) * 1.0                # binary irrigated
+  project(ir, template, method = "sum") * px_ha   # pixel count x pixel area
+}
+
+# lanid2012/2017.tif: 30 m, CONUS Albers, 0/1 (Zenodo record 5548555)
+# mirad250_12/17v4.tif: 250 m, Lambert azimuthal EA, 0/1 (ScienceBase)
+# {2012,2017}_AIM-HPA_rse_finalMapBinary.tif: 30 m; 0 = NoData, 1 = irrigated,
+#   2 = not irrigated (HydroShare); validity = fraction of cell with value > 0
+```
+
+```{r us_test_metrics}
+
+# EXISTENTIAL DISAGREEMENT: REGIONAL PRODUCTS VS THE GLOBAL ENSEMBLE ###########
+
+# The CSV holds the product values extracted at the paper's 0.2 deg cell
+# centres for every US cropland cell, so it joins back on lon/lat exactly
+# (rounded to one decimal to be robust to floating-point noise).
+
+reg <- fread(here("us_regional_products", "us_regional_products_02.csv"))
+reg[, `:=`(lon = round(lon, 1), lat = round(lat, 1))]
+
+us <- copy(wide[country == "United States"])
+us[, `:=`(lon = round(lon, 1), lat = round(lat, 1))]
+us <- merge(us, reg, by = c("lon", "lat"))
+stopifnot(nrow(us) == nrow(reg))
+
+# Existential: of union cells (>0 somewhere), % with at least one exact zero.
+# Strong: % of union cells where one product is 0 and another exceeds 1% of
+# the cell. Regional columns are in ha; the global maps are in Mha.
+
+exist_pct <- function(d, cols) {
+  A  <- as.matrix(d[, ..cols])
+  np <- rowSums(A > 0); un <- np > 0
+  round(100 * sum(un & np < length(cols)) / sum(un), 1)
+}
+strong_pct <- function(d, cols, big) {
+  A  <- as.matrix(d[, ..cols])
+  un <- rowSums(A > 0) > 0
+  round(100 * sum(un & apply(A, 1, min) == 0 &
+                    apply(A, 1, max) > big) / sum(un), 1)
+}
+dir_pct <- function(d, a, b) {           # % of union cells with a = 0, b > 0
+  A  <- as.matrix(d[, c(a, b), with = FALSE])
+  un <- rowSums(A > 0) > 0
+  round(100 * sum(un & A[, 1] == 0 & A[, 2] > 0) / sum(un), 1)
+}
+
+hpa <- us[aim_valid > 0.5]
+
+row_fun <- function(d, universe, comparison, cols, big)
+  data.table(universe, comparison,
+             existential = exist_pct(d, cols),
+             strong      = strong_pct(d, cols, big))
+
+out <- rbind(
+  row_fun(us,  "CONUS",       "LANID x MIrAD 2012", c("lanid12", "mirad12"), 500),
+  row_fun(us,  "CONUS",       "LANID x MIrAD 2017", c("lanid17", "mirad17"), 500),
+  row_fun(us,  "CONUS",       "Ten global maps",    maps,                    5e-4),
+  row_fun(hpa, "High Plains", "LANID x MIrAD 2012", c("lanid12", "mirad12"), 500),
+  row_fun(hpa, "High Plains", "LANID x MIrAD 2017", c("lanid17", "mirad17"), 500),
+  row_fun(hpa, "High Plains", "LANID x MIrAD x AIM 2012",
+          c("lanid12", "mirad12", "aim12"), 500),
+  row_fun(hpa, "High Plains", "LANID x MIrAD x AIM 2017",
+          c("lanid17", "mirad17", "aim17"), 500),
+  row_fun(hpa, "High Plains", "Ten global maps",    maps,                    5e-4))
+
+knitr::kable(out, caption = "Existential disagreement (of the cells where at
+             least one product records irrigation, the percentage where at
+             least one records exactly zero) and strong contradictions (one
+             product records zero, another exceeds 1\\% of the cell) among the
+             best US regional irrigation products, benchmarked against the ten
+             global maps over the same cells. CONUS: 17,087 US cropland cells;
+             High Plains: 1,549 cells within the AIM-HPA footprint.")
+
+# Directional asymmetry (mirrors the global census-vs-remote-sensing axis) -----
+
+data.table(
+  year = c(2012, 2017),
+  lanid0_mirad_pos = c(dir_pct(us, "lanid12", "mirad12"),
+                       dir_pct(us, "lanid17", "mirad17")),
+  mirad0_lanid_pos = c(dir_pct(us, "mirad12", "lanid12"),
+                       dir_pct(us, "mirad17", "lanid17")))
+```
+
+The verdict is split and informative. Across the CONUS, the two best national
+products, in the same years and anchored to US ground data, disagree on the
+existence of irrigation in a third of the cells where either sees it,
+decisively failing the 5\% bar; the direction mirrors the global
+census-versus-remote-sensing axis (the USDA-anchored MIrAD sees irrigation
+where the Landsat-based LANID sees none in 23-26\% of union cells). In the
+High Plains Aquifer, the best-mapped, centre-pivot, high-contrast region,
+the products nearly converge (5-8\%). Strong contradictions almost vanish
+everywhere (0-3\% against 47-70\% for the global ensemble). Better data thus
+fix magnitude-scale contradictions and resolve the clear cases, but leave the
+low-intensity middle contested: exactly the structure predicted if
+"irrigated" admits clear cases at the extremes and no principled boundary in
+the middle, and against the expectation that more resolution and better
+calibration restore identifiability in general.
+
+\newpage
+
 # Session information
 
 ```{r session_information}

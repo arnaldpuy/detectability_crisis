@@ -1,0 +1,459 @@
+## ----setup, include=FALSE-----------------------------------------------------
+knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
+
+
+## ----preliminary, warning=FALSE, message=FALSE, results = "hide"--------------
+
+# PROPAGATION OF IRRIGATION-MAP UNCERTAINTY INTO SDG 6.4 #######################
+################################################################################
+
+# We do NOT reimplement AQUASTAT or GlobWat. We take FAO's published indicator
+# values and replace only the irrigation-derived input with each ensemble member
+# / each k-of-10 consensus mask, holding everything else fixed (input-swap).
+
+# Load libraries ---------------------------------------------------------------
+
+sensobol::load_packages(c("data.table", "scales", "cowplot", "ggplot2", "magrittr",
+                          "here", "jsonlite", "countrycode"))
+
+# Create custom theme ----------------------------------------------------------
+
+theme_AP <- function() {
+  theme_bw() +
+    theme(panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          legend.background = element_rect(fill = "transparent", color = NA),
+          legend.key = element_rect(fill = "transparent", color = NA),
+          legend.key.width = unit(0.4, "cm"),
+          legend.key.height = unit(0.5, "lines"),
+          legend.text = element_text(size = 6),
+          legend.title = element_text(size = 7),
+          axis.text.x = element_text(size = 7),
+          axis.text.y = element_text(size = 7),
+          axis.title.x = element_text(size = 7.3),
+          axis.title.y = element_text(size = 7.3),
+          axis.title = element_text(size = 10),
+          plot.title = element_text(size = 8),
+          strip.text.x = element_text(size = 7.4),
+          strip.text.y = element_text(size = 7.4),
+          strip.background = element_rect(fill = "white"),
+          strip.text = element_text(margin = margin(t = 1.5, b = 1.5)))
+}
+
+# Names of the ten harmonized irrigation maps ----------------------------------
+
+maps <- c("gaez_v4", "giam", "gmia", "gripc", "luh2", "meier", "mirca2000",
+          "mirca_os", "nagaraj", "spam")
+
+# Observational subset (remote sensing / ML), used as a robustness check -------
+
+obs_maps <- c("giam", "gripc", "gmia", "meier", "mirca2000", "mirca_os", "nagaraj")
+
+dir.create(here("datasets", "input"), showWarnings = FALSE, recursive = TRUE)
+
+
+## ----functions----------------------------------------------------------------
+
+# RETRIEVE OFFICIAL FAO / UN-WATER INPUTS ######################################
+
+# SDG indicators are custodian-reported by FAO and disseminated through the
+# UNSD SDG API. The 6.4.2 series carries an "Activity" dimension, so the
+# agriculture-attributed water stress (and hence agriculture's share of
+# withdrawals) comes directly from FAO, keyed by m49.
+
+fetch_sdg_fun <- function(series_code) {
+  url <- paste0("https://unstats.un.org/sdgapi/v1/sdg/Series/Data?seriesCode=",
+                series_code, "&pageSize=25000")
+  dt <- as.data.table(jsonlite::fromJSON(url, flatten = TRUE)$data)
+  dt[, .(m49 = as.integer(geoAreaCode), area = geoAreaName,
+         activity = `dimensions.Activity`, year = as.numeric(timePeriodStart),
+         value = as.numeric(value))]
+}
+
+# Keep the latest year per area and activity -----------------------------------
+
+latest_fun <- function(dt) dt[!is.na(value)][order(-year), .SD[1], by = .(m49, activity)]
+
+# World Bank mirrors AQUASTAT/national-accounts series (most-recent value) ------
+
+fetch_wb_fun <- function(indicator) {
+  url <- paste0("https://api.worldbank.org/v2/country/all/indicator/", indicator,
+                "?format=json&per_page=20000&mrnev=1")
+  dt <- as.data.table(jsonlite::fromJSON(url, flatten = TRUE)[[2]])
+  dt[!is.na(value) & countryiso3code != "",
+     .(m49 = countrycode(countryiso3code, "iso3c", "un", warn = FALSE),
+       value = as.numeric(value))][!is.na(m49)]
+}
+
+# OFFICIAL 6.4.2 WATER-STRESS REPORTING BANDS (FAO / UN-Water, 5 classes) -------
+
+stress_bands <- data.table(
+  band  = c("No stress", "Low", "Medium", "High", "Critical"),
+  lower = c(0, 25, 50, 75, 100),
+  upper = c(25, 50, 75, 100, Inf),
+  order = 1:5)
+
+classify_stress_fun <- function(x) {
+  out <- rep(NA_integer_, length(x))
+  for (i in seq_len(nrow(stress_bands)))
+    out[x >= stress_bands$lower[i] & x < stress_bands$upper[i]] <- stress_bands$order[i]
+  out
+}
+
+# PER-COUNTRY ENSEMBLE IRRIGATED AREA (m49) ####################################
+
+# Aggregate the harmonized 0.2 deg field to country totals, one column per map.
+
+ensemble_country_area_fun <- function(d) {
+  dcast(d[, .(mha = sum(mha, na.rm = TRUE)), by = .(m49, dataset)],
+        m49 ~ dataset, value.var = "mha")
+}
+
+# STRESS UNDER A MAP (input-swap) ##############################################
+
+# Published stress already embeds TRWR and EFR; only the agricultural term
+# scales with irrigated area (linear scaling, Puy et al. 2021). Hence
+#   stress_map = stress_nonagri + stress_agri * (area_map / area_ref).
+
+stress_matrix_fun <- function(A, cols, ref_vec) {
+  M <- sapply(cols, function(j) A$stress_nonagri + A$stress_agri * (A[[j]] / ref_vec))
+  matrix(M, nrow = nrow(A), dimnames = list(NULL, cols))
+}
+
+# Inter-decile spread relative to the country median (robust, in %) ------------
+
+interdecile_fun <- function(M) {
+  md  <- apply(M, 1, median,   na.rm = TRUE)
+  p10 <- apply(M, 1, quantile, 0.1, na.rm = TRUE)
+  p90 <- apply(M, 1, quantile, 0.9, na.rm = TRUE)
+  100 * (p90 - p10) / md
+}
+
+
+## ----bands_table--------------------------------------------------------------
+
+band_display <- data.table(
+  Level = stress_bands$order,
+  Class = stress_bands$band,
+  range = c("$<25$", "$25-50$", "$50-75$", "$75-100$", "$\\geq 100$"))
+
+knitr::kable(band_display, booktabs = TRUE, escape = FALSE, linesep = "",
+             label = "bands",
+             col.names = c("Level", "Class", "Water stress (\\%)"),
+             align = c("c", "l", "c"),
+             caption = "Official SDG 6.4.2 water-stress classification, as defined in the SDG indicator 6.4.2 metadata (FAO/UN Statistics Division, 2024, p.~6). Bounds are lower-inclusive.")
+
+
+## ----retrieve, warning=FALSE, message=FALSE-----------------------------------
+
+# SDG 6.4.2 (level of water stress) and 6.4.1 (water-use efficiency) ------------
+# Download once into datasets/input; reuse the cached copy on later knits.
+
+f_642 <- here("datasets", "input", "sdg642_published.csv")
+f_641 <- here("datasets", "input", "sdg641_components.csv")
+
+if (!file.exists(f_642)) {
+  s642 <- latest_fun(fetch_sdg_fun("ER_H2O_STRESS"))
+  sdg642 <- dcast(s642[activity %in% c("TOTAL", "ISIC4_A01_A0210_A0322")],
+                  m49 + area ~ activity, value.var = "value")
+  setnames(sdg642, c("TOTAL", "ISIC4_A01_A0210_A0322"),
+           c("stress_total", "stress_agri"))
+  fwrite(sdg642, f_642)
+}
+if (!file.exists(f_641)) {
+  s641 <- latest_fun(fetch_sdg_fun("ER_H2O_WUEYST"))
+  sdg641 <- dcast(s641[activity %in% c("TOTAL", "ISIC4_A01_A0210_A0322")],
+                  m49 + area ~ activity, value.var = "value")
+  setnames(sdg641, c("TOTAL", "ISIC4_A01_A0210_A0322"), c("wue_total", "awe_agric"))
+  fwrite(sdg641, f_641)
+}
+fwrite(stress_bands, here("datasets", "input", "sdg642_stress_bands.csv"))
+
+sdg642 <- fread(f_642)
+sdg641 <- fread(f_641)
+
+# Agricultural value added and GDP (current US$) for the 6.4.1 sectoral split --
+
+f_va <- here("datasets", "input", "wb_value_added.csv")
+if (!file.exists(f_va)) {
+  va  <- fetch_wb_fun("NV.AGR.TOTL.CD"); setnames(va,  "value", "gva_agr")
+  gdp <- fetch_wb_fun("NY.GDP.MKTP.CD"); setnames(gdp, "value", "gdp")
+  wb  <- merge(va, gdp, by = "m49")
+  wb[, gva_nonag := gdp - gva_agr]
+  fwrite(wb, f_va)
+}
+wb <- fread(f_va)
+
+# Harmonized ensemble at 0.2 deg -----------------------------------------------
+
+d <- fread(here("datasets", "irrigated_areas_regridded", "irrigated_areas_regridded_02.csv"))
+setnames(d, "code", "m49")
+cty <- ensemble_country_area_fun(d)
+
+# Join ensemble + official inputs + agriculture share of withdrawals -----------
+
+dt_sdg <- merge(cty, sdg642[!is.na(stress_total)], by = "m49") %>%
+  merge(sdg641[!is.na(wue_total), .(m49, wue_total, awe_agric)], by = "m49",
+        all.x = TRUE) %>%
+  merge(wb[, .(m49, gva_agr, gdp)], by = "m49", all.x = TRUE)
+
+dt_sdg[, p_agr := fifelse(!is.na(stress_agri) & stress_total > 0,
+                          stress_agri / stress_total, NA_real_)]
+dt_sdg[, stress_nonagri := stress_total - fcoalesce(stress_agri, 0)]
+
+# Analysis set: GMIA reference area positive, agriculture share + stress present.
+
+dt_sdg <- dt_sdg[gmia > 0 & !is.na(p_agr) & stress_total > 0]
+dt_sdg[, .(n_countries = .N)] %>% print()
+
+
+## ----sdg642, fig.width=6, fig.height=4----------------------------------------
+
+# PER-MAP STRESS AND REPORTING BAND (reference = GMIA -> reproduces baseline) ###
+
+stress_cols <- paste0("stress_", maps)
+band_cols   <- paste0("band_",   maps)
+
+M_gmia <- stress_matrix_fun(dt_sdg, maps, dt_sdg$gmia)
+for (j in maps) dt_sdg[[paste0("stress_", j)]] <- M_gmia[, j]
+for (j in maps) dt_sdg[[paste0("band_",   j)]] <- classify_stress_fun(M_gmia[, j])
+
+dt_sdg[, band_base := classify_stress_fun(stress_total)]
+dt_sdg[, band_min  := apply(as.matrix(.SD), 1, min, na.rm = TRUE), .SDcols = band_cols]
+dt_sdg[, band_max  := apply(as.matrix(.SD), 1, max, na.rm = TRUE), .SDcols = band_cols]
+dt_sdg[, span      := band_max - band_min]
+dt_sdg[, stress_idr := interdecile_fun(M_gmia)]
+
+# Headline: how many countries change reporting band across the ten maps -------
+
+cat("Countries crossing >= 1 stress band:",
+    dt_sdg[span >= 1, .N], sprintf("(%.0f%%)", 100 * dt_sdg[, mean(span >= 1)]), "\n")
+cat("Countries crossing >= 2 stress bands:",
+    dt_sdg[span >= 2, .N], sprintf("(%.0f%%)", 100 * dt_sdg[, mean(span >= 2)]), "\n")
+
+# Robustness: observational-only ensemble (drops scenario/allocation products) -
+
+M_obs   <- stress_matrix_fun(dt_sdg, obs_maps, dt_sdg$gmia)
+B_obs   <- apply(M_obs, 2, classify_stress_fun)
+obs_span <- apply(B_obs, 1, max, na.rm = TRUE) - apply(B_obs, 1, min, na.rm = TRUE)
+cat("Observational-only (7 maps), crossing >= 1 band:",
+    sum(obs_span >= 1), sprintf("(%.0f%%)\n", 100 * mean(obs_span >= 1)))
+
+# Which map supplies the extreme stress (is it a structural-zero artefact?) -----
+
+cat("\nMap most often supplying the MAXIMUM stress:\n")
+print(sort(table(maps[apply(M_gmia, 1, which.max)]), decreasing = TRUE))
+
+
+## ----sdg642_boundary----------------------------------------------------------
+
+# CROSSINGS OF THE NO-STRESS / STRESS LINE (25%) ###############################
+
+band_label <- stress_bands$band
+
+# Officially safe but pushed into stress by >= 1 valid map ---------------------
+
+up <- dt_sdg[band_base == 1 & band_max >= 2]
+up[, n_stress := rowSums(.SD >= 25), .SDcols = stress_cols]
+cat("No stress -> stress (officially 'No stress', flipped by >= 1 map):",
+    nrow(up), "\n")
+print(up[order(-band_max)][, .(area, worst = band_label[band_max],
+        n_stress, n_total = length(maps))][1:10])
+
+# Officially stressed but declared safe by >= 1 valid map ----------------------
+
+down <- dt_sdg[band_base >= 2 & band_min == 1]
+down[, n_nostress := rowSums(.SD < 25), .SDcols = stress_cols]
+cat("\nStress -> No stress (officially stressed, declared safe by >= 1 map):",
+    nrow(down), "\n")
+print(down[order(-band_base, -n_nostress)][, .(area, published = band_label[band_base],
+        n_nostress, n_total = length(maps))][1:10])
+
+
+## ----sdg642_ksweep------------------------------------------------------------
+
+# k-OF-10 CONSENSUS SWEEP ######################################################
+
+# Per cell: agreement count and ensemble-mean intensity. As k rises, only cells
+# where >= k maps agree survive, the irrigated footprint shrinks, attributed
+# agricultural withdrawal falls, and the stress band drops.
+
+cell <- d[, .(n_present = sum(mha > 0), mbar = mean(mha), m49 = m49[1]),
+          by = .(lon, lat)]
+
+k_sweep <- rbindlist(lapply(1:length(maps), function(k) {
+  cell[n_present >= k, .(area_k = sum(mbar)), by = m49][, k := k]
+})) %>%
+  merge(cty[, .(m49, gmia)], by = "m49") %>%
+  merge(dt_sdg[, .(m49, area, stress_nonagri, stress_agri, band_base)], by = "m49")
+
+k_sweep[, stress_k := stress_nonagri + stress_agri * (area_k / gmia)]
+k_sweep[, band_k   := classify_stress_fun(stress_k)]
+
+k_cross <- k_sweep[, .(span = max(band_k, na.rm = TRUE) - min(band_k, na.rm = TRUE)),
+                   by = .(m49, area)][span >= 1]
+cat("Countries changing band across the k-sweep:", nrow(k_cross), "\n")
+cat("At near-consensus k = 5, differing from the published band:",
+    k_sweep[k == 5 & band_k != band_base, .N], "\n")
+
+
+## ----sdg641-------------------------------------------------------------------
+
+# FULL SECTORAL NUMERIC ########################################################
+
+# WUE = Awe * PA + Swe * PS, with PA the agriculture share of withdrawals.
+# The map scales agricultural withdrawal (and irrigated value added) linearly,
+# so the agricultural efficiency Awe is invariant; only the water-weight PA
+# moves. WUE is therefore bounded between Awe and the effective non-agricultural
+# efficiency Swe -- but that bound is wide because the two differ by orders of
+# magnitude, so 6.4.1 still shifts substantially.
+
+dt_wue <- dt_sdg[!is.na(wue_total) & !is.na(awe_agric)]
+ref_area <- dt_wue$gmia   # GMIA reference (same as 6.4.2): r = area_map / area_GMIA
+swe_eff  <- (dt_wue$wue_total - dt_wue$awe_agric * dt_wue$p_agr) / (1 - dt_wue$p_agr)
+
+W <- sapply(maps, function(j) {
+  r      <- dt_wue[[j]] / ref_area
+  pa_map <- (dt_wue$p_agr * r) / (dt_wue$p_agr * r + (1 - dt_wue$p_agr))
+  dt_wue$awe_agric * pa_map + swe_eff * (1 - pa_map)
+})
+dt_wue[, wue_idr := interdecile_fun(W)]
+
+cat("SDG 6.4.1 countries analysed:", nrow(dt_wue), "\n")
+cat("Inter-decile WUE spread: median",
+    sprintf("%.0f%%", dt_wue[, median(wue_idr, na.rm = TRUE)]),
+    "of baseline; within +/-25%:",
+    sprintf("%.0f%% of countries\n", 100 * dt_wue[, mean(wue_idr <= 25, na.rm = TRUE)]))
+cat("Magnitude vs 6.4.2 (inter-decile median): 6.4.1",
+    sprintf("%.0f%%", dt_wue[, median(wue_idr, na.rm = TRUE)]), "vs 6.4.2",
+    sprintf("%.0f%%", dt_sdg[, median(stress_idr, na.rm = TRUE)]),
+    "-> comparable in magnitude.\n")
+cat("Asymmetry is categorical: only 6.4.2 has reporting bands, so its movement",
+    "reclassifies countries; 6.4.1 is a continuous USD/m3 with no band system.\n")
+
+# Persist the propagated results -----------------------------------------------
+
+fwrite(dt_sdg[, c("m49", "area", "stress_total", "band_base", "p_agr",
+                  stress_cols, "band_min", "band_max", "span", "stress_idr"),
+              with = FALSE],
+       here("datasets", "output", "sdg642_ensemble.csv"))
+fwrite(dt_wue[, .(m49, area, wue_total, awe_agric, p_agr, wue_idr)],
+       here("datasets", "output", "sdg641_full_numeric.csv"))
+
+
+## ----fig_641, fig.width=5.5, fig.height=4.8, warning=FALSE, message=FALSE, fig.cap="SDG 6.4.1 and 6.4.2 are equally sensitive to the choice of irrigation map. Each point is a country (n = 162); the axes give the inter-decile spread of each indicator across the ten maps (90th minus 10th percentile, as a percentage of the published value). The dashed line is 1:1 and the dotted lines mark the medians (6.4.1, 67\\%; 6.4.2, 74\\%). Points are coloured by agriculture's share of total water withdrawal. Most countries fall on or near the 1:1 line, so swapping the irrigation map moves the national water-use-efficiency indicator by about as much as it moves water stress, and the movement grows with agriculture's share of withdrawals. Unlike 6.4.2, however, 6.4.1 carries no reporting bands, so this movement does not translate into a categorical reclassification."----
+
+# SDG 6.4.1 vs 6.4.2 SENSITIVITY ##############################################
+
+# One point per country: the relative movement of each indicator across the ten
+# maps. Proximity to the 1:1 line shows the two indicators are equally
+# map-dependent; the colour shows that the movement is driven by how much of a
+# country's water withdrawal is agricultural.
+
+ax_cap <- 200
+
+plot_efficiency <- ggplot(dt_wue, aes(stress_idr, wue_idr, colour = p_agr)) +
+  geom_abline(slope = 1, intercept = 0, linetype = 2,
+              linewidth = 0.3, colour = "grey40") +
+  geom_hline(yintercept = median(dt_wue$wue_idr, na.rm = TRUE),
+             linetype = 3, linewidth = 0.25, colour = "#2c7fb8") +
+  geom_vline(xintercept = median(dt_wue$stress_idr, na.rm = TRUE),
+             linetype = 3, linewidth = 0.25, colour = "#d95f0e") +
+  geom_point(size = 1.2, alpha = 0.85) +
+  scale_colour_viridis_c("Agriculture's share\nof water withdrawal",
+                         limits = c(0, 1), labels = label_percent()) +
+  scale_x_continuous("SDG 6.4.2 water stress: spread across the 10 maps\n(inter-decile range, % of published value)",
+                     limits = c(0, ax_cap), oob = squish) +
+  scale_y_continuous("SDG 6.4.1 efficiency: spread across the 10 maps\n(inter-decile range, % of published value)",
+                     limits = c(0, ax_cap), oob = squish) +
+  theme_AP() + theme(legend.position = "right")
+
+ggsave(here("datasets", "output", "fig_sdg641_efficiency.pdf"),
+       plot_efficiency, width = 5.5, height = 4.8)
+
+plot_efficiency
+
+
+## ----composite, fig.width=5.7, fig.height=3.7, warning=FALSE, message=FALSE, fig.cap="Propagation of irrigation-map disagreement into SDG indicator 6.4.2 (level of water stress). Each of the ten harmonized irrigation maps is swapped, one at a time, into FAO's published indicator, holding all other inputs fixed. (a) For every country (one horizontal line, n = 170, stacked by published water stress), the grey line spans the lowest-to-highest water-stress value obtained across the ten maps and the black dot marks FAO's published value (from GMIA). Background shading shows the five official stress bands (Table 1; same colours as panel b); values above 150\\% are clipped to the axis. A line that crosses a shaded boundary is a country whose official stress class depends on which map is used. (b) Water-stress class of each country under each map, for the 30 countries whose class spans at least two bands (71 of 170 span at least one). The GMIA column is FAO's current input and reproduces the published value, so reading across a row shows how a country's official class would change were GMIA swapped for any other equally-valid map. SDG 6.4.1 (water-use efficiency) shifts by a comparable relative amount (median inter-decile spread 67\\% of baseline, versus 74\\% for 6.4.2) but, lacking categorical reporting bands, does not produce a reclassification."----
+
+pal_band <- c("No stress" = "#1a9850", "Low" = "#a6d96a", "Medium" = "#fee08b",
+              "High" = "#fc8d59", "Critical" = "#d73027")
+
+# (a) The water-stress VALUE of every country across the ten maps ##############
+
+# For each country, a horizontal line spans the lowest-to-highest water-stress
+# value obtained across the ten maps; the dot is FAO's published value (GMIA).
+# Countries are stacked by published stress. The background is shaded with the
+# five official bands, so a line that crosses a shaded boundary is a country
+# whose reporting class depends on the choice of map.
+
+x_cap <- 150
+rng <- copy(dt_sdg)
+rng[, st_min := apply(as.matrix(.SD), 1, min, na.rm = TRUE), .SDcols = stress_cols]
+rng[, st_max := apply(as.matrix(.SD), 1, max, na.rm = TRUE), .SDcols = stress_cols]
+rng[, rank   := frank(stress_total, ties.method = "first")]
+
+band_rect <- data.table(xmin = c(0, 25, 50, 75, 100),
+                        xmax = c(25, 50, 75, 100, x_cap),
+                        band_f = factor(band_label, levels = band_label))
+
+plot_range <- ggplot() +
+  geom_rect(data = band_rect,
+            aes(xmin = xmin, xmax = xmax, ymin = 0, ymax = nrow(rng) + 1,
+                fill = band_f), alpha = 0.30) +
+  geom_linerange(data = rng, aes(y = rank, xmin = pmin(st_min, x_cap),
+                                 xmax = pmin(st_max, x_cap)),
+                 linewidth = 0.25, colour = "grey25") +
+  geom_point(data = rng, aes(y = rank, x = pmin(stress_total, x_cap)),
+             size = 0.45, colour = "black") +
+  scale_fill_manual("Stress band", values = pal_band, drop = FALSE) +
+  scale_x_continuous("Water stress (%)", limits = c(0, x_cap),
+                     oob = squish, expand = c(0, 0)) +
+  scale_y_continuous("Countries (ranked by published water stress)",
+                     expand = c(0, 0)) +
+  theme_AP() +
+  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(),
+        legend.position = "none")
+
+# (b) CONSEQUENCE: 6.4.2 stress band under each map (swap FAO's GMIA for each) ##
+
+# The GMIA column reproduces the published value by construction, so reading
+# across a row shows how a country's official stress class would change if FAO
+# swapped GMIA for any other equally-valid map. We show the countries that cross
+# at least two bands (the clearest cases); 71 cross at least one.
+
+map_label <- c(gmia = "GMIA", gaez_v4 = "GAEZ+", giam = "GIAM",
+               gripc = "GRIPC", luh2 = "LUH2", meier = "Meier",
+               mirca2000 = "MIRCA2000", mirca_os = "MIRCA-OS",
+               nagaraj = "Nagaraj", spam = "SPAM")
+
+# Recode the non-ASCII country name that does not render in the PDF font --------
+dt_sdg[grepl("rkiye", area), area := "Turkiye"]
+
+swap <- melt(dt_sdg[span >= 2], id.vars = c("area", "stress_total"),
+             measure.vars = band_cols, variable.name = "map", value.name = "band")
+swap[, map := sub("band_", "", map)]
+swap[, map_f  := factor(map_label[map],
+                        levels = c("GMIA", sort(map_label[names(map_label) != "gmia"])))]
+swap[, area   := factor(area, levels = dt_sdg[span >= 2][order(stress_total), area])]
+swap[, band_f := factor(band_label[band], levels = band_label)]
+
+plot_swap <- ggplot(swap, aes(map_f, area, fill = band_f)) +
+  geom_tile(color = "white", linewidth = 0.3) +
+  scale_fill_manual("Stress band", values = pal_band, drop = FALSE) +
+  scale_x_discrete(position = "top") +
+  labs(x = NULL, y = NULL) +
+  theme_AP() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 0, size = 7),
+        axis.text.y = element_text(size = 7), 
+        legend.position = "right")
+
+# Combine ----------------------------------------------------------------------
+
+plot_sdg <- plot_grid(plot_range, plot_swap, ncol = 2,
+                      rel_widths = c(0.35, 0.65), labels = "auto")
+
+# Print last so the caption attaches to the figure float -----------------------
+
+plot_sdg
+

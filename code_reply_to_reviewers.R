@@ -1,0 +1,542 @@
+## ----setup, include=FALSE-----------------------------------------------------
+knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
+
+
+## ----preliminary, warning=FALSE, message=FALSE, results = "hide"--------------
+
+# ANALYSES SUPPORTING THE REPLY TO THE REVIEWERS ##############################
+################################################################################
+
+# This script reproduces every quantitative figure cited in our reply to the
+# reviewers. All analyses use the harmonized ensemble at 0.2 deg restricted to
+# cropland cells (the same universe as the main analysis).
+
+# Load libraries ---------------------------------------------------------------
+
+sensobol::load_packages(c("data.table", "here", "terra", "magrittr"))
+
+# Functions reused from the main analysis --------------------------------------
+
+source(here("functions", "filter_long_dt_by_crop_mask_aggregated.R"))
+source(here("functions", "compute_tau_max_disagreement_fun.R"))
+
+# Harmonized ensemble at 0.2 deg, restricted to cropland -----------------------
+
+dt <- fread(here("datasets", "irrigated_areas_regridded",
+                 "irrigated_areas_regridded_02.csv"))
+dt[, resolution := "0.2deg"]
+crop <- rast(here("irrigated_area_datasets", "GirrEO", "asap_mask_crop_v02.tif"))
+dt <- filter_long_dt_by_crop_mask_aggregated(dt = dt, crop_native = crop,
+                                             rule = "any")
+
+# Cells x maps -----------------------------------------------------------------
+
+wide <- dcast(dt, lon + lat + country + continent ~ dataset, value.var = "mha",
+              fill = 0)
+
+maps <- c("gaez_v4", "giam", "gmia", "gripc", "luh2", "meier",
+          "mirca2000", "mirca_os", "nagaraj", "spam")
+stopifnot(all(maps %in% names(wide)))
+
+# Nominal reference year of each map (Table on temporal characteristics) -------
+
+nominal <- c(giam = 2000, mirca2000 = 2000, gmia = 2005, gripc = 2005,
+             nagaraj = 2005, meier = 2005, spam = 2010, mirca_os = 2015,
+             gaez_v4 = 2015, luh2 = 2015)
+
+# Mapping families -------------------------------------------------------------
+
+census <- c("gmia", "mirca2000", "mirca_os", "spam", "gaez_v4")  # FAO-statistics
+rs      <- c("giam", "gripc")                                    # remote sensing
+
+# Detectability threshold grid (1 ha to 1e5 ha) and 1%-of-cell tolerance -------
+
+taus_ha     <- c(0, 10^(seq(0, 5, by = 0.1)))
+taus_mha    <- taus_ha * 1e-6
+zero_tol_02 <- 500  # 1% of the 0.2 deg cell, in ha
+
+# Existential disagreement: of the cells where at least one map records
+# irrigation (> 0), the fraction in which at least one map records exactly zero.
+
+exist_union <- function(w, cols) {
+  A <- as.matrix(w[, ..cols])
+  n_present <- rowSums(A > 0, na.rm = TRUE)
+  disagree  <- n_present > 0 & n_present < length(cols)
+  Amin <- do.call(pmin, c(as.data.frame(A), list(na.rm = TRUE)))
+  sum(disagree & Amin == 0) / sum(n_present > 0)
+}
+
+# Extreme disagreement: fraction of cells whose tau_max exceeds ten times the
+# detectability threshold (one map reports > ~10% of the cell, another ~0).
+
+extreme_frac <- function(w, cols, zero_tol = zero_tol_02) {
+  tm <- compute_tau_max_existential_fun(w, cols, taus_mha, taus_ha,
+                                        zero_tol_ha = zero_tol)
+  mean(!is.na(tm$tau_max_ha) & tm$tau_max_ha > 10 * zero_tol)
+}
+
+
+## ----r11----------------------------------------------------------------------
+
+# Equator cell area (ha) per resolution ----------------------------------------
+
+R_earth <- 6371
+deg <- c("0.2" = 0.2, "0.4" = 0.4, "1" = 1)
+cell_ha <- sapply(deg, function(d) (d * pi / 180 * R_earth)^2 * 100)
+round(cell_ha)
+
+# Key tau values as a percentage of the cell ----------------------------------
+
+tau_key <- c(100, 500, 1000, 2500, 5000, 10000, 25000)
+tau_tab <- data.table(
+  `tau (ha)`    = tau_key,
+  `0.2 deg (%)` = round(100 * tau_key / cell_ha["0.2"], 2),
+  `0.4 deg (%)` = round(100 * tau_key / cell_ha["0.4"], 2),
+  `1 deg (%)`   = round(100 * tau_key / cell_ha["1"],   2))
+
+knitr::kable(tau_tab, caption = "Detectability threshold tau as a percentage of the grid-cell area at the equator. The analysis centres on tau = 1% of the cell (about 500, 2000 and 12400 ha); extreme disagreement denotes tau_max above ten times this value.")
+
+
+## ----r15_sameyear-------------------------------------------------------------
+
+# Maps that share the 2005 reference year versus the full ensemble --------------
+
+sameyear_2005 <- c("gmia", "gripc", "nagaraj", "meier")
+
+data.table(
+  set  = c("Same year (2005)", "Full ensemble"),
+  maps = c(length(sameyear_2005), length(maps)),
+  existential_pct = round(100 * c(exist_union(wide, sameyear_2005),
+                                  exist_union(wide, maps))))
+
+
+## ----r15_sizecontrol----------------------------------------------------------
+
+# Recompute over every four-map combination to hold ensemble size fixed --------
+
+combs4  <- combn(maps, 4, simplify = FALSE)
+ev4     <- sapply(combs4, function(cc) exist_union(wide, cc))
+span4   <- sapply(combs4, function(cc) diff(range(nominal[cc])))
+same_ev <- exist_union(wide, sameyear_2005)
+
+data.table(
+  quantity = c("Minimum", "Median", "Maximum",
+               "Same-year (2005) combination", "Most dispersed (1999-2015)"),
+  existential_pct = round(100 * c(min(ev4), median(ev4), max(ev4),
+                                  same_ev, mean(ev4[span4 == max(span4)]))),
+  percentile = c(NA, NA, NA, round(100 * mean(ev4 <= same_ev)), NA))
+
+
+## ----r15_directional----------------------------------------------------------
+
+# Direction of disagreement: under real expansion, a recent (2015) map should
+# not record zero where an older (2000-2005) map detects irrigation.
+
+old_t    <- c("giam", "mirca2000", "gmia", "gripc")   # 2000-2005
+recent_t <- c("gaez_v4", "luh2", "mirca_os")          # 2015
+
+pooled_blind <- function(new) {
+  A_old   <- as.matrix(wide[, ..old_t])
+  old_any <- rowSums(A_old > 0, na.rm = TRUE) > 0
+  sum(old_any & wide[[new]] == 0, na.rm = TRUE) / sum(old_any)
+}
+
+data.table(
+  recent_map = c("GAEZ+2015", "LUH2", "MIRCA-OS"),
+  sees_zero_where_older_detects_pct = round(100 * sapply(recent_t, pooled_blind)))
+
+
+## ----r21----------------------------------------------------------------------
+
+census_ev <- exist_union(wide, census)
+
+combs5 <- combn(maps, 5, simplify = FALSE)
+ev5    <- sapply(combs5, function(cc) exist_union(wide, cc))
+
+data.table(
+  quantity = c("Census-5 (GMIA, MIRCA2000, MIRCA-OS, SPAM, GAEZ+2015)",
+               "All 252 five-map subsets: minimum",
+               "All 252 five-map subsets: median",
+               "All 252 five-map subsets: maximum"),
+  existential_pct = round(100 * c(census_ev, min(ev5), median(ev5), max(ev5))),
+  note = c(sprintf("percentile %.0f%%", 100 * mean(ev5 <= census_ev)),
+           "", "", ""))
+
+
+## ----r22----------------------------------------------------------------------
+
+any_pos <- function(cols) rowSums(as.matrix(wide[, ..cols]) > 0, na.rm = TRUE) > 0
+cP <- any_pos(census)
+rP <- any_pos(rs)
+
+data.table(
+  quantity = c("RS records zero where census detects irrigation (% of census-irrigated cells)",
+               "Census records zero where RS detects irrigation (% of RS-irrigated cells)",
+               "Within RS family: GIAM vs GRIPC existential disagreement (%)",
+               "Within census family: five FAO products existential disagreement (%)",
+               "Mean global total, census maps (Mha)",
+               "Mean global total, RS maps (Mha)"),
+  value = c(round(100 * sum(cP & !rP) / sum(cP)),
+            round(100 * sum(rP & !cP) / sum(rP)),
+            round(100 * exist_union(wide, rs)),
+            round(100 * exist_union(wide, census)),
+            round(mean(sapply(census, function(m) sum(wide[[m]])))),
+            round(mean(sapply(rs,     function(m) sum(wide[[m]]))))))
+
+# Per-map global totals underlying the census/RS means (which maps each group
+# uses follows the reviewer's own classification in his comment) ---------------
+
+data.table(
+  group = c(rep("census", length(census)), rep("remote sensing", length(rs))),
+  map = c(census, rs),
+  total_mha = round(sapply(c(census, rs), function(m) sum(wide[[m]])), 1))
+
+
+## ----r23----------------------------------------------------------------------
+
+provenance <- data.table(
+  product = c("GMIA", "SPAM2010", "MIRCA2000", "MIRCA-OS", "GAEZ+2015", "GIAM"),
+  variable_used = c("Actually irrigated area (AEI x AAI fraction), not AEI",
+                    "Physical irrigated area (SPAM 'A'), capped at cell area",
+                    "Maximum monthly irrigated area (physical extent), not summed",
+                    "Maximum monthly growing area (physical extent), not summed",
+                    "Harvested irrigated area, capped at physical cell area",
+                    "Net actually irrigated area (TAAI), not annualized (AIA)"),
+  source = c("code_original_datasets.Rmd L254", "L439, L452", "L341", "L643",
+             "L382, L399", "L205"))
+
+knitr::kable(provenance, caption = "Variable extracted for each product (code_original_datasets.Rmd). Every product is reduced to its actual physical irrigated extent, so differences between area equipped, harvested area and monthly growing area do not enter the existence comparison.")
+
+
+## ----r32----------------------------------------------------------------------
+
+Apres <- as.matrix(wide[, ..maps])
+wide[, agree_presence := rowSums(Apres > zero_tol_02 * 1e-6) == 10]
+
+# Overlap with rice production (EarthStat, regridded to 0.2 deg) ---------------
+
+rice <- rast(here("datasets", "earthstat_regridded", "res_02",
+                  "rice_Production_ll_02.tif"))
+wide[, rice_pos := { v <- terra::extract(rice, cbind(lon, lat))[, 1]
+                     !is.na(v) & v > 0 }]
+
+ag <- wide[agree_presence == TRUE]
+
+data.table(
+  metric = c("Agreement cells (all 10 above 1% of cell)",
+             "In Asia (%)",
+             "Latitude belt (10th-90th percentile)",
+             "Coincide with rice production (%)",
+             "All cropland cells coinciding with rice (%)"),
+  value = c(as.character(nrow(ag)),
+            as.character(round(100 * mean(ag$continent == "Asia"))),
+            sprintf("%.0f-%.0f N", quantile(ag$lat, .10), quantile(ag$lat, .90)),
+            as.character(round(100 * mean(ag$rice_pos))),
+            as.character(round(100 * mean(wide$rice_pos)))))
+
+
+## ----r32_countries------------------------------------------------------------
+
+knitr::kable(ag[, .N, country][order(-N)][1:5],
+             caption = "Countries with the most cells where all ten datasets agree irrigation is present (0.2 deg).")
+
+
+## ----r314---------------------------------------------------------------------
+
+# Global reference -------------------------------------------------------------
+
+glob <- data.table(country = "GLOBAL", cells = nrow(wide),
+                   existential_pct = round(100 * exist_union(wide, maps)),
+                   extreme_pct = round(100 * extreme_frac(wide, maps)))
+
+# By country -------------------------------------------------------------------
+
+ctys <- c("India", "Portugal", "Italy", "Pakistan", "China", "Spain",
+          "Egypt", "France", "Mexico", "Iran", "United States")
+
+res <- rbindlist(lapply(ctys, function(cn) {
+  s <- wide[country == cn]
+  if (nrow(s) == 0) return(NULL)
+  data.table(country = cn, cells = nrow(s),
+             existential_pct = round(100 * exist_union(s, maps)),
+             extreme_pct = round(100 * extreme_frac(s, maps)))
+}))
+
+res <- rbind(glob, res[order(-extreme_pct)])
+
+knitr::kable(res, caption = "Existential and extreme disagreement by country (0.2 deg). Existential: of the cells where at least one map detects irrigation, the percentage in which at least one map detects none. Extreme: percentage of cropland cells whose tau_max exceeds ten times the detectability threshold. Spain (the highest-drip country) is not a maximum.")
+
+
+## ----underdetermination-------------------------------------------------------
+
+# UNDERDETERMINATION COUNT #####################################################
+
+A <- as.matrix(wide[, ..maps])
+Amin <- do.call(pmin, as.data.frame(A))
+Amax <- do.call(pmax, as.data.frame(A))
+
+underdet_fun <- function(T_ha) {
+  T_mha    <- T_ha * 1e-6
+  det_pres <- Amin > T_mha
+  und      <- !(det_pres | Amax == 0)
+  data.table(T_ha             = T_ha,
+             det_present      = sum(det_pres),
+             underdetermined  = sum(und),
+             underdet_pct     = round(100 * mean(und), 1),
+             existential_pct  = round(100 * sum(und & Amin == 0) / sum(und), 1),
+             log10_truths     = round(sum(und) * log10(2)))
+}
+
+knitr::kable(rbindlist(lapply(c(100, 500, 1000), underdet_fun)),
+             caption = "Underdetermination of irrigation presence (0.2 deg,
+             cropland). det\\_present: cells where every map exceeds the
+             strictest admissible threshold T. existential\\_pct: share of
+             underdetermined cells where at least one map reports exactly
+             zero. log10\\_truths: size (in powers of ten) of the set of
+             complete global presence fields consistent with all ten maps.")
+
+
+## ----lca_functions------------------------------------------------------------
+
+# K-CLASS LATENT CLASS MODEL VIA EM ON AGGREGATED RESPONSE PATTERNS ############
+
+lca_em <- function(pat, cnt, K, n_start = 50, tol = 1e-8, maxit = 3000,
+                   seed = 123) {
+  set.seed(seed)
+  D <- ncol(pat); n <- sum(cnt)
+  best <- NULL; logliks <- numeric(n_start)
+  for (s in seq_len(n_start)) {
+    x    <- rexp(K); pi_k <- x / sum(x)
+    rho  <- matrix(runif(K * D, .05, .95), K, D)
+    ll_old <- -Inf
+    for (it in seq_len(maxit)) {
+      logp <- sapply(seq_len(K), function(k)
+        pat %*% log(rho[k, ]) + (1 - pat) %*% log(1 - rho[k, ]) + log(pi_k[k]))
+      m    <- apply(logp, 1, max)
+      lse  <- m + log(rowSums(exp(logp - m)))
+      ll   <- sum(cnt * lse)
+      post <- exp(logp - lse)
+      w    <- post * cnt
+      Nk   <- colSums(w)
+      pi_k <- Nk / n
+      rho  <- pmin(pmax(crossprod(w, pat) / Nk, 1e-6), 1 - 1e-6)
+      if (abs(ll - ll_old) < tol) break
+      ll_old <- ll
+    }
+    logliks[s] <- ll
+    if (is.null(best) || ll > best$ll)
+      best <- list(ll = ll, pi = pi_k, rho = rho, post = post)
+  }
+  npar <- (K - 1) + K * D
+  c(best, list(npar = npar, bic = -2 * best$ll + npar * log(n),
+               logliks = logliks))
+}
+
+# Fit K = 1-4, report fit, error rates, residual dependence, 3-class profile --
+
+lca_report_fun <- function(Y, label) {
+  D    <- ncol(Y); n <- nrow(Y)
+  code <- as.integer(Y %*% 2^(0:(D - 1)))
+  tab  <- data.table(code = code)[, .N, by = code][order(code)]
+  pat  <- t(sapply(tab$code, function(z) as.integer(intToBits(z)[1:D])))
+  cnt  <- tab$N
+  fits <- lapply(1:4, function(K) lca_em(pat, cnt, K))
+
+  comp <- data.table(K = 1:4,
+                     loglik = sapply(fits, function(f) round(f$ll, 1)),
+                     npar   = sapply(fits, function(f) f$npar),
+                     BIC    = sapply(fits, function(f) round(f$bic, 1)))
+
+  f2  <- fits[[2]]
+  irr <- which.max(rowMeans(f2$rho)); no <- setdiff(1:2, irr)
+  err <- data.table(map = maps,
+                    FNR = round(1 - f2$rho[irr, ], 3),
+                    FPR = round(f2$rho[no, ], 3))[order(-FNR)]
+
+  logp <- sapply(1:2, function(k)
+    pat %*% log(f2$rho[k, ]) + (1 - pat) %*% log(1 - f2$rho[k, ]) +
+      log(f2$pi[k]))
+  m  <- apply(logp, 1, max)
+  e  <- n * exp(m + log(rowSums(exp(logp - m))))
+  G2 <- 2 * sum(cnt * log(cnt / e))
+  df <- nrow(pat) - 1 - f2$npar
+
+  P_obs <- crossprod(Y) / n
+  P_exp <- f2$pi[1] * tcrossprod(f2$rho[1, ]) +
+           f2$pi[2] * tcrossprod(f2$rho[2, ])
+  R  <- (P_obs - P_exp) * 100
+  ut <- which(upper.tri(R), arr.ind = TRUE)
+  res <- data.table(m1 = maps[ut[, 1]], m2 = maps[ut[, 2]],
+                    resid = round(R[ut], 2))[order(-abs(resid))][1:5]
+
+  f3  <- fits[[3]]
+  ord <- order(rowMeans(f3$rho))
+  pr  <- data.table(class = sprintf("pi = %.2f", f3$pi[ord]),
+                    round(as.data.table(f3$rho[ord, , drop = FALSE]), 2))
+  setnames(pr, c("class", maps))
+  post3 <- f3$post[match(code, tab$code), ]
+  mid_share <- 100 * mean(apply(post3, 1, which.max) == ord[2])
+  ll_r  <- round(f2$logliks, 1)
+
+  cat("\n####", label, "----", n, "cells,", nrow(pat), "patterns\n")
+  print(comp)
+  cat(sprintf("\n2-class fit: G2 = %.0f on df = %d (G2/df = %.1f)\n",
+              G2, df, G2 / df))
+  cat(sprintf("2-class multistart: %d distinct loglik modes in 50 starts\n",
+              length(unique(ll_r))))
+  cat("\nImplied per-map error rates (2-class):\n"); print(err)
+  cat("\nLargest residual pairwise associations (obs - exp P(both = 1), x100):\n")
+  print(res)
+  cat(sprintf("\n3-class model: BIC improvement over 2-class = %.0f;",
+              fits[[2]]$bic - f3$bic))
+  cat(sprintf(" middle-class posterior share = %.1f%%\n", mid_share))
+  cat("3-class item-probability profiles (rows ordered low to high):\n")
+  print(pr)
+  invisible(fits)
+}
+
+
+## ----lca_run------------------------------------------------------------------
+
+# RUN AT BOTH DETECTION CONVENTIONS ############################################
+
+fits_tau0   <- lca_report_fun(1L * (A > 0),    "tau = 0 (any positive area)")
+fits_tau500 <- lca_report_fun(1L * (A > 5e-4), "tau = 500 ha (1% of cell)")
+
+
+## ----us_test_aggregation, eval=FALSE------------------------------------------
+# 
+# # AGGREGATION OF THE US REGIONAL PRODUCTS (documentation; not run) #############
+# 
+# template <- rast(xmin = -126, xmax = -66, ymin = 24, ymax = 50,
+#                  resolution = 0.2, crs = "EPSG:4326")
+# 
+# agg_to_ha <- function(f, irr_val, px_ha) {
+#   ir <- (rast(f) == irr_val) * 1.0                # binary irrigated
+#   project(ir, template, method = "sum") * px_ha   # pixel count x pixel area
+# }
+# 
+# # lanid2012/2017.tif: 30 m, CONUS Albers, 0/1 (Zenodo record 5548555)
+# # mirad250_12/17v4.tif: 250 m, Lambert azimuthal EA, 0/1 (ScienceBase)
+# # {2012,2017}_AIM-HPA_rse_finalMapBinary.tif: 30 m; 0 = NoData, 1 = irrigated,
+# #   2 = not irrigated (HydroShare); validity = fraction of cell with value > 0
+
+
+## ----us_test_metrics----------------------------------------------------------
+
+# EXISTENTIAL DISAGREEMENT: REGIONAL PRODUCTS VS THE GLOBAL ENSEMBLE ###########
+
+# The CSV holds the product values extracted at the paper's 0.2 deg cell
+# centres for every US cropland cell, so it joins back on lon/lat exactly
+# (rounded to one decimal to be robust to floating-point noise).
+
+reg <- fread(here("us_regional_products", "us_regional_products_02.csv"))
+reg[, `:=`(lon = round(lon, 1), lat = round(lat, 1))]
+
+us <- copy(wide[country == "United States"])
+us[, `:=`(lon = round(lon, 1), lat = round(lat, 1))]
+us <- merge(us, reg, by = c("lon", "lat"))
+stopifnot(nrow(us) == nrow(reg))
+
+# Existential: of union cells (>0 somewhere), % with at least one exact zero.
+# Strong: % of union cells where one product is 0 and another exceeds 1% of
+# the cell. Regional columns are in ha; the global maps are in Mha.
+
+exist_pct <- function(d, cols) {
+  A  <- as.matrix(d[, ..cols])
+  np <- rowSums(A > 0); un <- np > 0
+  round(100 * sum(un & np < length(cols)) / sum(un), 1)
+}
+strong_pct <- function(d, cols, big) {
+  A  <- as.matrix(d[, ..cols])
+  un <- rowSums(A > 0) > 0
+  round(100 * sum(un & apply(A, 1, min) == 0 &
+                    apply(A, 1, max) > big) / sum(un), 1)
+}
+dir_pct <- function(d, a, b) {           # % of union cells with a = 0, b > 0
+  A  <- as.matrix(d[, c(a, b), with = FALSE])
+  un <- rowSums(A > 0) > 0
+  round(100 * sum(un & A[, 1] == 0 & A[, 2] > 0) / sum(un), 1)
+}
+
+hpa <- us[aim_valid > 0.5]
+
+row_fun <- function(d, universe, comparison, cols, big)
+  data.table(universe, comparison,
+             existential = exist_pct(d, cols),
+             strong      = strong_pct(d, cols, big))
+
+out <- rbind(
+  row_fun(us,  "CONUS",       "LANID x MIrAD 2012", c("lanid12", "mirad12"), 500),
+  row_fun(us,  "CONUS",       "LANID x MIrAD 2017", c("lanid17", "mirad17"), 500),
+  row_fun(us,  "CONUS",       "Ten global maps",    maps,                    5e-4),
+  row_fun(hpa, "High Plains", "LANID x MIrAD 2012", c("lanid12", "mirad12"), 500),
+  row_fun(hpa, "High Plains", "LANID x MIrAD 2017", c("lanid17", "mirad17"), 500),
+  row_fun(hpa, "High Plains", "LANID x MIrAD x AIM 2012",
+          c("lanid12", "mirad12", "aim12"), 500),
+  row_fun(hpa, "High Plains", "LANID x MIrAD x AIM 2017",
+          c("lanid17", "mirad17", "aim17"), 500),
+  row_fun(hpa, "High Plains", "Ten global maps",    maps,                    5e-4))
+
+knitr::kable(out, caption = "Existential disagreement (of the cells where at
+             least one product records irrigation, the percentage where at
+             least one records exactly zero) and strong contradictions (one
+             product records zero, another exceeds 1\\% of the cell) among the
+             best US regional irrigation products, benchmarked against the ten
+             global maps over the same cells. CONUS: 17,087 US cropland cells;
+             High Plains: 1,549 cells within the AIM-HPA footprint.")
+
+# Directional asymmetry (mirrors the global census-vs-remote-sensing axis) -----
+
+data.table(
+  year = c(2012, 2017),
+  lanid0_mirad_pos = c(dir_pct(us, "lanid12", "mirad12"),
+                       dir_pct(us, "lanid17", "mirad17")),
+  mirad0_lanid_pos = c(dir_pct(us, "mirad12", "lanid12"),
+                       dir_pct(us, "mirad17", "lanid17")))
+
+
+## ----us_test_structure--------------------------------------------------------
+
+# GEOGRAPHIC AND MAGNITUDE STRUCTURE OF THE LANID-MIRAD DISAGREEMENT ###########
+
+# Directional cells by longitude (100W = the classic humid/arid divide) and
+# the median irrigated area at stake in each direction.
+
+struct <- rbindlist(lapply(c("12", "17"), function(yr) {
+  L <- us[[paste0("lanid", yr)]]; M <- us[[paste0("mirad", yr)]]
+  un <- L > 0 | M > 0
+  lm <- un & L == 0 & M > 0; ml <- un & M == 0 & L > 0; both <- L > 0 & M > 0
+  data.table(year = paste0("20", yr),
+             direction = c("MIrAD > 0, LANID = 0", "LANID > 0, MIrAD = 0",
+                           "Both > 0"),
+             cells = c(sum(lm), sum(ml), sum(both)),
+             east_100W_pct = round(100 * c(mean(us$lon[lm] > -100),
+                                           mean(us$lon[ml] > -100),
+                                           mean(us$lon[both] > -100))),
+             median_ha = round(c(median(M[lm]), median(L[ml]),
+                                 median(pmin(L, M)[both]))))
+}))
+struct
+cat("Baseline: union cells east of 100W:",
+    round(100 * mean(us$lon[us$lanid12 > 0 | us$mirad12 > 0] > -100)), "%\n")
+
+# Pairwise existential disagreement within the High Plains -------------------
+
+pair_exist <- function(a, b) {
+  un <- a > 0 | b > 0
+  round(100 * mean((a == 0 | b == 0)[un]), 1)
+}
+for (yr in c("12", "17"))
+  cat(sprintf(
+    "HPA 20%s pairwise existential: LANIDxMIrAD %.1f | LANIDxAIM %.1f | MIrADxAIM %.1f\n",
+    yr,
+    pair_exist(hpa[[paste0("lanid", yr)]], hpa[[paste0("mirad", yr)]]),
+    pair_exist(hpa[[paste0("lanid", yr)]], hpa[[paste0("aim",   yr)]]),
+    pair_exist(hpa[[paste0("mirad", yr)]], hpa[[paste0("aim",   yr)]])))
+
+
+## ----session_information------------------------------------------------------
+
+sessionInfo()
+

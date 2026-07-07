@@ -361,30 +361,17 @@ knitr::kable(res, caption = "Existential and extreme disagreement by country (0.
 
 # Additional analyses: the non-identifiability claim
 
-The three analyses below harden the claim that irrigation presence is
-non-identifiable (manuscript, section "Irrigated areas are non-identifiable";
-Reviewer 1, comment 4; Reviewer 2, overall concern). The first counts how many
-complete global presence/absence fields are consistent with all ten maps at
-once. The second gives the rival hypothesis its best shot: if irrigation
-presence were an identifiable binary variable observed by ten imperfect
-instruments, the standard latent-class machinery for diagnostic tests without
-a gold standard (Hui and Walter 1980, Biometrics 36:167-171) should reproduce
-the observed response patterns with plausible error rates. The third tests the
-strongest surviving objection ("better data will fix it") against the
-best-in-class regional irrigation products over the United States.
+These analyses support the manuscript section "Irrigated areas are
+non-identifiable". The rationale and interpretation are given there and in the
+SM (Secs. 1.7.3-1.7.5); here we only reproduce the numbers.
 
 ## Underdetermination: how many truths are consistent with the data
 
-A cell is determined only if every map forces the same answer under every
-admissible detection convention $\tau \in [0, T]$: determined-present if the
-smallest reported area exceeds the strictest admissible threshold
-($\min_d A_d > T$) and determined-absent if every map reports exactly zero.
-In all other cells both "irrigated" and "non-irrigated" are consistent with
-the ensemble, so the set of complete global presence fields consistent with
-all ten maps contains $2^{N_{\text{und}}}$ members. The universe here contains
-only cropland cells with at least one positive report, so determined-absent is
-zero by construction; adding all-zero cropland cells changes nothing because
-they are all determined-absent.
+Determined-present: every map exceeds the strictest admissible threshold
+($\min_d A_d > T$). Determined-absent: every map reports exactly zero (none
+here by construction, since the universe only contains cells with at least one
+positive report). All other cells are underdetermined: both classifications
+are consistent with the ensemble.
 
 ```{r underdetermination}
 
@@ -415,24 +402,16 @@ knitr::kable(rbindlist(lapply(c(100, 500, 1000), underdet_fun)),
              complete global presence fields consistent with all ten maps.")
 ```
 
-At the paper's threshold ($T=500$ ha, 1\% of the cell) 92.9\% of the cells are
-underdetermined, so the ten maps are jointly consistent with $\approx
-10^{36{,}238}$ distinct global irrigation-presence fields. Existential cases
-(at least one map reports exactly zero) make up 96-99\% of the
-underdetermination across the admissible range, so the result is not driven by
-threshold sensitivity. Consistency checks: determined-present at $T=500$ ha
-(9,248 cells) equals the R3.2 agreement-cell count, and the existential set
-(117,294 cells, 90.5\%) equals the manuscript's 90\% headline.
+Consistency checks: determined-present at $T=500$ ha (9,248 cells) equals the
+R3.2 agreement-cell count; the existential set (117,294 cells, 90.5\%) equals
+the manuscript's 90\% headline.
 
 ## Latent-class analysis: testing "identifiable truth plus noise"
 
-We fit $K$-class latent class models by expectation-maximisation on the
-$2^{10}$ response patterns of the binary presence matrix (conditional
-independence within class; 50 random starts per fit). Under the rival
-hypothesis, the two-class model (irrigated / non-irrigated plus per-map error
-rates) should fit. Three quantities matter: the goodness of fit of the
-two-class model, the per-map error rates it implies, and the structure of what
-it misses.
+$K$-class latent class models (conditional independence within class) fitted
+by expectation-maximisation on the $2^{10}$ response patterns of the binary
+presence matrix, at $\tau=0$ and $\tau=500$ ha, with 50 random starts per fit
+(Hui and Walter 1980).
 
 ```{r lca_functions}
 
@@ -542,43 +521,19 @@ fits_tau0   <- lca_report_fun(1L * (A > 0),    "tau = 0 (any positive area)")
 fits_tau500 <- lca_report_fun(1L * (A > 5e-4), "tau = 500 ha (1% of cell)")
 ```
 
-The two-class model is decisively rejected at both conventions ($G^2/\text{df}
-= 377$ at $\tau=0$ and $82$ at $\tau=500$ ha), and it is not rescued by
-estimation problems: all 50 starts converge to a single mode. Rescuing the
-rival hypothesis requires implausible instruments (at $\tau=500$ ha, LUH2
-missing 62\% of truly irrigated cells, GIAM 45\%, GRIPC 40\%; at $\tau=0$,
-GRIPC false-alarming in 53\% of truly non-irrigated cells). The residual
-dependence concentrates within mapping families (GIAM-GRIPC on the
-remote-sensing side, MIRCA2000-SPAM on the census side), so the maps are not
-independent witnesses, and the third latent class that the data demand (BIC
-improvement of 46,000-116,000) is a census-positive / remote-sensing-negative
-class: the latent structure required by the data encodes how the maps were
-made, not only whether irrigation exists.
-
 ## The best-products test over the United States
 
-If existential disagreement reflected data quality alone, the best available
-irrigation products should agree on where irrigation exists. We test this in
-the country with the best irrigation data: we compare LANID (Xie and Lark
-2021; 30 m, Landsat, annual), MIrAD-US (Pervez and Brown 2010; 250 m, MODIS
-anchored to USDA county statistics; version 4) and AIM-HPA (Deines et al.
-2019; 30 m, Landsat, High Plains Aquifer only) in the two years all three
-cover (2012 and 2017). Decision rule, stated before computing: existential
-disagreement below 5\% of union cells supports the claim that better data
-restore identifiability; disagreement comparable to the ten-map global
-ensemble over the same cells refutes it.
-
-Each product was downloaded from its public archive (LANID:
-doi:10.5281/zenodo.5548555; MIrAD-US: doi:10.5066/P9NA3EO8; AIM-HPA:
-doi:10.4211/hs.a371fd69d41b4232806d81e17fe4efcb) and aggregated from its
-native equal-area grid to the paper's 0.2$^\circ$ grid by warp-summing the
-binary irrigated pixels and multiplying by the pixel area (0.09 ha at 30 m,
-6.25 ha at 250 m), yielding irrigated hectares per cell. The chunk below
-documents the aggregation; it is not evaluated because it requires about 700
-MB of raw rasters and several hours of warping. The aggregated table ships
-with the repository (\texttt{us\_regional\_products/}). As a sanity check, the
-CONUS totals are mutually consistent: LANID 23.1 (2012) and 24.2 Mha (2017);
-MIrAD 22.5 and 23.8 Mha.
+LANID (Xie and Lark 2021; 30 m, Landsat, annual), MIrAD-US v4 (Pervez and
+Brown 2010; 250 m, MODIS anchored to USDA county statistics) and AIM-HPA
+(Deines et al. 2019; 30 m, Landsat, High Plains Aquifer) compared in 2012 and
+2017, the two years all three cover. Sources: LANID doi:10.5281/zenodo.5548555;
+MIrAD-US doi:10.5066/P9NA3EO8; AIM-HPA
+doi:10.4211/hs.a371fd69d41b4232806d81e17fe4efcb. The aggregation to the
+0.2$^\circ$ grid (warp-sum of binary irrigated pixels $\times$ pixel area:
+0.09 ha at 30 m, 6.25 ha at 250 m) is documented in the non-evaluated chunk
+below; the aggregated table ships with the repository
+(\texttt{us\_regional\_products/}). CONUS totals as a sanity check: LANID
+23.1/24.2 Mha, MIrAD 22.5/23.8 Mha (2012/2017).
 
 ```{r us_test_aggregation, eval=FALSE}
 
@@ -672,20 +627,48 @@ data.table(
                        dir_pct(us, "mirad17", "lanid17")))
 ```
 
-The verdict is split and informative. Across the CONUS, the two best national
-products, in the same years and anchored to US ground data, disagree on the
-existence of irrigation in a third of the cells where either sees it,
-decisively failing the 5\% bar; the direction mirrors the global
-census-versus-remote-sensing axis (the USDA-anchored MIrAD sees irrigation
-where the Landsat-based LANID sees none in 23-26\% of union cells). In the
-High Plains Aquifer, the best-mapped, centre-pivot, high-contrast region,
-the products nearly converge (5-8\%). Strong contradictions almost vanish
-everywhere (0-3\% against 47-70\% for the global ensemble). Better data thus
-fix magnitude-scale contradictions and resolve the clear cases, but leave the
-low-intensity middle contested: exactly the structure predicted if
-"irrigated" admits clear cases at the extremes and no principled boundary in
-the middle, and against the expectation that more resolution and better
-calibration restore identifiability in general.
+```{r us_test_structure}
+
+# GEOGRAPHIC AND MAGNITUDE STRUCTURE OF THE LANID-MIRAD DISAGREEMENT ###########
+
+# Directional cells by longitude (100W = the classic humid/arid divide) and
+# the median irrigated area at stake in each direction.
+
+struct <- rbindlist(lapply(c("12", "17"), function(yr) {
+  L <- us[[paste0("lanid", yr)]]; M <- us[[paste0("mirad", yr)]]
+  un <- L > 0 | M > 0
+  lm <- un & L == 0 & M > 0; ml <- un & M == 0 & L > 0; both <- L > 0 & M > 0
+  data.table(year = paste0("20", yr),
+             direction = c("MIrAD > 0, LANID = 0", "LANID > 0, MIrAD = 0",
+                           "Both > 0"),
+             cells = c(sum(lm), sum(ml), sum(both)),
+             east_100W_pct = round(100 * c(mean(us$lon[lm] > -100),
+                                           mean(us$lon[ml] > -100),
+                                           mean(us$lon[both] > -100))),
+             median_ha = round(c(median(M[lm]), median(L[ml]),
+                                 median(pmin(L, M)[both]))))
+}))
+struct
+cat("Baseline: union cells east of 100W:",
+    round(100 * mean(us$lon[us$lanid12 > 0 | us$mirad12 > 0] > -100)), "%\n")
+
+# Pairwise existential disagreement within the High Plains -------------------
+
+pair_exist <- function(a, b) {
+  un <- a > 0 | b > 0
+  round(100 * mean((a == 0 | b == 0)[un]), 1)
+}
+for (yr in c("12", "17"))
+  cat(sprintf(
+    "HPA 20%s pairwise existential: LANIDxMIrAD %.1f | LANIDxAIM %.1f | MIrADxAIM %.1f\n",
+    yr,
+    pair_exist(hpa[[paste0("lanid", yr)]], hpa[[paste0("mirad", yr)]]),
+    pair_exist(hpa[[paste0("lanid", yr)]], hpa[[paste0("aim",   yr)]]),
+    pair_exist(hpa[[paste0("mirad", yr)]], hpa[[paste0("aim",   yr)]])))
+```
+
+The interpretation of these results is given in the manuscript (section
+"Irrigated areas are non-identifiable") and the SM (Sec. 1.7.5).
 
 \newpage
 

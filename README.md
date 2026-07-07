@@ -256,6 +256,8 @@ Propagates the detectability crisis into the two FAO water-governance indicators
 #### 5. `code_reply_to_reviewers`
 Reproduces every quantitative figure cited in our reply to the reviewers, organised by reviewer. Working from the harmonized 0.2° ensemble restricted to cropland cells, it reports: the detectability threshold *τ* as a fraction of the grid-cell area at each resolution (Reviewer 1); the temporal-heterogeneity tests showing that maps representing the same nominal year disagree on the existence of irrigation as much as maps spanning 1999–2015, and that the most recent maps record no irrigation where older maps detect it (Reviewer 1); the existential disagreement among products that map the same variable — including that the five census-based products are the single most-agreeing five-map subset, that remote-sensing and census products are not a subset of one another, and which variable is extracted for each product (Reviewer 2); and the existential and extreme disagreement by country, showing it does not track irrigation practice (Reviewer 3).
 
+The notebook closes with three additional analyses supporting the non-identifiability claim (first round of revisions): an underdetermination count, a latent-class test of the "identifiable truth plus noise" hypothesis and a comparison of the best US regional products (LANID, MIrAD-US, AIM-HPA). The rationale and interpretation are given in the manuscript and its Supplementary Materials. The regional products aggregated to the 0.2° grid ship in `us_regional_products/us_regional_products_02.csv`, so the US analysis reproduces without downloading the raw rasters.
+
 ## Supplementary material
 
 * `irrigated_area_policy_SM.pdf` — *Policies using irrigated area statistics*. A review of policy documents, programmes 
@@ -295,10 +297,12 @@ code_detectability_irrigated_areas/
 │   ├── plot_attr.R
 │   ├── regridding_functions.R
 │   └── run_test.R
-└── irrigation_masks/                       # Consensus irrigated-area masks
-    ├── irrigation_mask_02.csv              # 0.2° resolution
-    ├── irrigation_mask_04.csv              # 0.4° resolution
-    └── irrigation_mask_1.csv              # 1° resolution
+├── irrigation_masks/                       # Consensus irrigated-area masks
+│   ├── irrigation_mask_02.csv              # 0.2° resolution
+│   ├── irrigation_mask_04.csv              # 0.4° resolution
+│   └── irrigation_mask_1.csv               # 1° resolution
+└── us_regional_products/                   # US regional products at 0.2° (reply to reviewers)
+    └── us_regional_products_02.csv         # LANID, MIrAD-US, AIM-HPA (2012, 2017) at US cropland cells
 ```
 
 ## Key analytical concepts

@@ -258,6 +258,8 @@ Reproduces every quantitative figure cited in our reply to the reviewers, organi
 
 The notebook closes with three additional analyses supporting the non-identifiability claim (first round of revisions): an underdetermination count, a latent-class test of the "identifiable truth plus noise" hypothesis and a comparison of the best US regional products (LANID, MIrAD-US, AIM-HPA). The rationale and interpretation are given in the manuscript and its Supplementary Materials. The regional products aggregated to the 0.2° grid ship in `us_regional_products/us_regional_products_02.csv`, so the US analysis reproduces without downloading the raw rasters.
 
+The CSV is a derivative (aggregation to 0.2°) of third-party data redistributed under their own terms: LANID ([Xie & Lark 2021](https://doi.org/10.5281/zenodo.5548555), CC-BY 4.0) and AIM-HPA ([Deines et al. 2019](https://doi.org/10.4211/hs.a371fd69d41b4232806d81e17fe4efcb), CC-BY 4.0), both modified by aggregation; and MIrAD-US ([USGS](https://doi.org/10.5066/P9NA3EO8), US public domain).
+
 ## Supplementary material
 
 * `irrigated_area_policy_SM.pdf` — *Policies using irrigated area statistics*. A review of policy documents, programmes 

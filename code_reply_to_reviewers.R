@@ -1,8 +1,8 @@
-## ----setup, include=FALSE-----------------------------------------------------
+## ----setup, include=FALSE----------------------------------------------------------------------
 knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
 
 
-## ----preliminary, warning=FALSE, message=FALSE, results = "hide"--------------
+## ----preliminary, warning=FALSE, message=FALSE, results = "hide"-------------------------------
 
 # ANALYSES SUPPORTING THE REPLY TO THE REVIEWERS ##############################
 ################################################################################
@@ -76,7 +76,7 @@ extreme_frac <- function(w, cols, zero_tol = zero_tol_02) {
 }
 
 
-## ----r11----------------------------------------------------------------------
+## ----r11---------------------------------------------------------------------------------------
 
 # Equator cell area (ha) per resolution ----------------------------------------
 
@@ -94,10 +94,10 @@ tau_tab <- data.table(
   `0.4 deg (%)` = round(100 * tau_key / cell_ha["0.4"], 2),
   `1 deg (%)`   = round(100 * tau_key / cell_ha["1"],   2))
 
-knitr::kable(tau_tab, caption = "Detectability threshold tau as a percentage of the grid-cell area at the equator. The analysis centres on tau = 1% of the cell (about 500, 2000 and 12400 ha); extreme disagreement denotes tau_max above ten times this value.")
+knitr::kable(tau_tab, caption = "Detectability threshold tau as a percentage of the grid-cell area at the equator.")
 
 
-## ----r15_sameyear-------------------------------------------------------------
+## ----r15_sameyear------------------------------------------------------------------------------
 
 # Maps that share the 2005 reference year versus the full ensemble --------------
 
@@ -110,7 +110,7 @@ data.table(
                                   exist_union(wide, maps))))
 
 
-## ----r15_sizecontrol----------------------------------------------------------
+## ----r15_sizecontrol---------------------------------------------------------------------------
 
 # Recompute over every four-map combination to hold ensemble size fixed --------
 
@@ -127,7 +127,7 @@ data.table(
   percentile = c(NA, NA, NA, round(100 * mean(ev4 <= same_ev)), NA))
 
 
-## ----r15_directional----------------------------------------------------------
+## ----r15_directional---------------------------------------------------------------------------
 
 # Direction of disagreement: under real expansion, a recent (2015) map should
 # not record zero where an older (2000-2005) map detects irrigation.
@@ -146,7 +146,7 @@ data.table(
   sees_zero_where_older_detects_pct = round(100 * sapply(recent_t, pooled_blind)))
 
 
-## ----r21----------------------------------------------------------------------
+## ----r21---------------------------------------------------------------------------------------
 
 census_ev <- exist_union(wide, census)
 
@@ -163,7 +163,7 @@ data.table(
            "", "", ""))
 
 
-## ----r22----------------------------------------------------------------------
+## ----r22---------------------------------------------------------------------------------------
 
 any_pos <- function(cols) rowSums(as.matrix(wide[, ..cols]) > 0, na.rm = TRUE) > 0
 cP <- any_pos(census)
@@ -192,7 +192,7 @@ data.table(
   total_mha = round(sapply(c(census, rs), function(m) sum(wide[[m]])), 1))
 
 
-## ----r23----------------------------------------------------------------------
+## ----r23---------------------------------------------------------------------------------------
 
 provenance <- data.table(
   product = c("GMIA", "SPAM2010", "MIRCA2000", "MIRCA-OS", "GAEZ+2015", "GIAM"),
@@ -205,10 +205,10 @@ provenance <- data.table(
   source = c("code_original_datasets.Rmd L254", "L439, L452", "L341", "L643",
              "L382, L399", "L205"))
 
-knitr::kable(provenance, caption = "Variable extracted for each product (code_original_datasets.Rmd). Every product is reduced to its actual physical irrigated extent, so differences between area equipped, harvested area and monthly growing area do not enter the existence comparison.")
+knitr::kable(provenance, caption = "Variable extracted for each product (code_original_datasets.Rmd). Every product is reduced to its actual physical irrigated extent.")
 
 
-## ----r32----------------------------------------------------------------------
+## ----r32---------------------------------------------------------------------------------------
 
 Apres <- as.matrix(wide[, ..maps])
 wide[, agree_presence := rowSums(Apres > zero_tol_02 * 1e-6) == 10]
@@ -235,13 +235,13 @@ data.table(
             as.character(round(100 * mean(wide$rice_pos)))))
 
 
-## ----r32_countries------------------------------------------------------------
+## ----r32_countries-----------------------------------------------------------------------------
 
 knitr::kable(ag[, .N, country][order(-N)][1:5],
              caption = "Countries with the most cells where all ten datasets agree irrigation is present (0.2 deg).")
 
 
-## ----r314---------------------------------------------------------------------
+## ----r314--------------------------------------------------------------------------------------
 
 # Global reference -------------------------------------------------------------
 
@@ -264,10 +264,10 @@ res <- rbindlist(lapply(ctys, function(cn) {
 
 res <- rbind(glob, res[order(-extreme_pct)])
 
-knitr::kable(res, caption = "Existential and extreme disagreement by country (0.2 deg). Existential: of the cells where at least one map detects irrigation, the percentage in which at least one map detects none. Extreme: percentage of cropland cells whose tau_max exceeds ten times the detectability threshold. Spain (the highest-drip country) is not a maximum.")
+knitr::kable(res, caption = "Existential and extreme disagreement by country (0.2 deg).")
 
 
-## ----underdetermination-------------------------------------------------------
+## ----underdetermination------------------------------------------------------------------------
 
 # UNDERDETERMINATION COUNT #####################################################
 
@@ -296,7 +296,7 @@ knitr::kable(rbindlist(lapply(c(100, 500, 1000), underdet_fun)),
              complete global presence fields consistent with all ten maps.")
 
 
-## ----lca_functions------------------------------------------------------------
+## ----lca_functions-----------------------------------------------------------------------------
 
 # K-CLASS LATENT CLASS MODEL VIA EM ON AGGREGATED RESPONSE PATTERNS ############
 
@@ -396,7 +396,7 @@ lca_report_fun <- function(Y, label) {
 }
 
 
-## ----lca_run------------------------------------------------------------------
+## ----lca_run-----------------------------------------------------------------------------------
 
 # RUN AT BOTH DETECTION CONVENTIONS ############################################
 
@@ -404,7 +404,7 @@ fits_tau0   <- lca_report_fun(1L * (A > 0),    "tau = 0 (any positive area)")
 fits_tau500 <- lca_report_fun(1L * (A > 5e-4), "tau = 500 ha (1% of cell)")
 
 
-## ----us_test_aggregation, eval=FALSE------------------------------------------
+## ----us_test_aggregation, eval=FALSE-----------------------------------------------------------
 # 
 # # AGGREGATION OF THE US REGIONAL PRODUCTS (documentation; not run) #############
 # 
@@ -415,20 +415,11 @@ fits_tau500 <- lca_report_fun(1L * (A > 5e-4), "tau = 500 ha (1% of cell)")
 #   ir <- (rast(f) == irr_val) * 1.0                # binary irrigated
 #   project(ir, template, method = "sum") * px_ha   # pixel count x pixel area
 # }
-# 
-# # lanid2012/2017.tif: 30 m, CONUS Albers, 0/1 (Zenodo record 5548555)
-# # mirad250_12/17v4.tif: 250 m, Lambert azimuthal EA, 0/1 (ScienceBase)
-# # {2012,2017}_AIM-HPA_rse_finalMapBinary.tif: 30 m; 0 = NoData, 1 = irrigated,
-# #   2 = not irrigated (HydroShare); validity = fraction of cell with value > 0
 
 
-## ----us_test_metrics----------------------------------------------------------
+## ----us_test_metrics---------------------------------------------------------------------------
 
 # EXISTENTIAL DISAGREEMENT: REGIONAL PRODUCTS VS THE GLOBAL ENSEMBLE ###########
-
-# The CSV holds the product values extracted at the paper's 0.2 deg cell
-# centres for every US cropland cell, so it joins back on lon/lat exactly
-# (rounded to one decimal to be robust to floating-point noise).
 
 reg <- fread(here("us_regional_products", "us_regional_products_02.csv"))
 reg[, `:=`(lon = round(lon, 1), lat = round(lat, 1))]
@@ -437,10 +428,6 @@ us <- copy(wide[country == "United States"])
 us[, `:=`(lon = round(lon, 1), lat = round(lat, 1))]
 us <- merge(us, reg, by = c("lon", "lat"))
 stopifnot(nrow(us) == nrow(reg))
-
-# Existential: of union cells (>0 somewhere), % with at least one exact zero.
-# Strong: % of union cells where one product is 0 and another exceeds 1% of
-# the cell. Regional columns are in ha; the global maps are in Mha.
 
 exist_pct <- function(d, cols) {
   A  <- as.matrix(d[, ..cols])
@@ -482,9 +469,7 @@ knitr::kable(out, caption = "Existential disagreement (of the cells where at
              least one product records irrigation, the percentage where at
              least one records exactly zero) and strong contradictions (one
              product records zero, another exceeds 1\\% of the cell) among the
-             best US regional irrigation products, benchmarked against the ten
-             global maps over the same cells. CONUS: 17,087 US cropland cells;
-             High Plains: 1,549 cells within the AIM-HPA footprint.")
+             best US regional irrigation products.")
 
 # Directional asymmetry (mirrors the global census-vs-remote-sensing axis) -----
 
@@ -496,12 +481,9 @@ data.table(
                        dir_pct(us, "mirad17", "lanid17")))
 
 
-## ----us_test_structure--------------------------------------------------------
+## ----us_test_structure-------------------------------------------------------------------------
 
 # GEOGRAPHIC AND MAGNITUDE STRUCTURE OF THE LANID-MIRAD DISAGREEMENT ###########
-
-# Directional cells by longitude (100W = the classic humid/arid divide) and
-# the median irrigated area at stake in each direction.
 
 struct <- rbindlist(lapply(c("12", "17"), function(yr) {
   L <- us[[paste0("lanid", yr)]]; M <- us[[paste0("mirad", yr)]]
@@ -536,7 +518,7 @@ for (yr in c("12", "17"))
     pair_exist(hpa[[paste0("mirad", yr)]], hpa[[paste0("aim",   yr)]])))
 
 
-## ----session_information------------------------------------------------------
+## ----session_information-----------------------------------------------------------------------
 
 sessionInfo()
 

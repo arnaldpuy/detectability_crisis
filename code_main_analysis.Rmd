@@ -386,14 +386,6 @@ plot_agreement1 <- mat_sum[agreement %in% c("share_existence", "share_marginal")
 
 plot_agreement1
 
-# Around tau > 10^4 ha, the existential and marginal components intersect. That 
-# intersection has a clear conceptual meaning:
-# -It is the tolerance level at which disagreement about whether irrigation exists
-# at all becomes less dominant than disagreement about how much irrigation exists.
-# -Still small relative to grid-cell area. 1000 ha is only 2–3% of a 0.2º grid cell. 
-# That makes it a conservative tolerance as we are not allowing massive within-cell 
-# divergence.
-
 # SENSITIVITY ANALYSIS #########################################################
 
 # Sobol' indices ---------------------------------------------------------------
@@ -578,20 +570,6 @@ p3
 
 plot_grid(p1, p2, p3, ncol = 3, labels = "auto")
 
-# Increasing spatial aggregation from 0.2 to 1 (25x coarsening) reduces
-# existential disagreement by c20 percentage points at near-zero
-# thresholds. this effect vanishes around tau = 300–500 ha, beyond which
-# aggregation increases disagreement. At higher thresholds disagreement is
-# greater at 1 than at 0.2. Coarse-scale aggregation can
-# amplify rather than resolve structural spatial inconsistencies between datasets.
-
-# These results refut the criticism of "if you zoom out, the maps converge".
-
-# ALSO: Increasing cell area by a factor of 25 (0.2 to 1) yields an elasticity
-# of approximately -0.07 at tau =  0, implying that a 1% increase in spatial
-# aggregation reduces disagreement by only 0.07%. Elasticity approaches zero
-# at moderate thresholds and becomes positive at higher thresholds.
-
 ```
 
 \newpage 
@@ -675,7 +653,6 @@ tau_results <- rbindlist(
       use_ds <- setdiff(ds_res, excl_ds)
       if (length(use_ds) < 2L) return(NULL)
 
-      # taus used for THIS (resolution, exclusion-group)
       taus_ha <- unique(mat_res[exclusion == excl_grp, tau])
       taus_mha <- taus_ha * 1e-6
 
@@ -969,11 +946,11 @@ tau_results <- rbindlist(
         # if only one dataset left, skip --------------------------------------
         if (length(use_ds) < 2L) return(NULL)
 
-        # design rows for THIS (resolution, scenario) -------------------------
+        # design rows for this (resolution, scenario) -------------------------
         mat_scn <- unique(mat_res[exclusion == scn, .(tau, weight)])
         if (nrow(mat_scn) == 0L) return(NULL)
 
-        # reshape to wide ONCE per (res, scenario) ----------------------------
+        # reshape to wide oince per (res, scenario) ----------------------------
         dt_res_wide <- dcast(
           dt_res_long[dataset %in% use_ds],
           lon + lat + country + code + continent ~ dataset,
@@ -1281,11 +1258,11 @@ tau_results <- rbindlist(
       use_ds <- setdiff(ds_res, excl_ds)
       if (length(use_ds) < 2L) return(NULL)
       
-      # taus used for THIS (resolution, exclusion-group)
+      # taus used for thsiu (resolution, exclusion-group)
       taus_ha <- unique(mat_res[exclusion == excl_grp, tau])
       taus_mha <- taus_ha * 1e-6
       
-      # ---- compute A_min/A_max ONCE per exclusion group ----
+      # ---- compute A_min/A_max once per exclusion group ----
       dt_w <- dt_res_wide_all[, c(idcols, use_ds), with = FALSE]
       
       dt_w[, `:=`(A_min = do.call(pmin, c(.SD, list(na.rm = TRUE))),
@@ -1494,16 +1471,6 @@ plot_grid(top, bottom, ncol = 1)
 
 # COMPUTE TAU MAX ##############################################################
 ################################################################################
-
-# Tau max is the largest irrigation threshold at which at least one dataset
-# classifies the cell as essentially unirrigated  while another classifies
-# it as irrigated. Tau max thus quantifies how large the ontological disagreement
-# on irrigation is. We also set NA to two cases:
-
-# - Universally non-irrigated cells: all datasets report areas <= threshold.
-# - Universally irrigated cells: all datasets report areas >threshold.
-
-# NA cells are cells for which there is agreement irrigation exists or it is absent.
 
 ## Compute tau_max_results -----------------------------------------------------
 
@@ -1747,12 +1714,6 @@ loo_stats_full <- tau_max_results[, .(
 
 loo_stats_full
 
-# In half of all grid cells worldwide, at least one dataset reports >=1000 ha
-# of irrigation while another reports none. Removing most datasets does not
-# change anything. Removing GIAM, Nagaraj, LUH2 and GRIPC drops the median disagreement
-# and the extreme values, as they particularly increase existential contradictions
-# in the upper half of the distribution.
-
 # In which regions is each dataset structurally responsible for
 # deep existential contradictions? -----------------------------------------------
 
@@ -1796,11 +1757,6 @@ table(influence_matrix$n_datasets)
 # 2: partial overlap.
 # 3: same hotspot amplified by all three.
 
-# Since there are zero cells where two datasets simultaneously aplify deep
-# disagreement (> 1000 ha) or all three do, it means that their influence is
-# spatially distinct. 16,511 cells show strong amplification but always due
-# to exactly one dataset.
-
 # Where does amplification concentrate? ----------------------------------------
 
 regional_amp <- tau_delta[resolution == "0.2deg",
@@ -1811,15 +1767,6 @@ regional_amp <- tau_delta[resolution == "0.2deg",
 
 
 regional_amp
-# Table shows which continents each dataset most strongly affects:
-# - Europe: GIAM dominates existential disagreement in Europe, LUH2 barely affects it.
-# - Asia: all three datasets contribute, LUH2 contributes less existential disagreement
-# - Ocenia: GIAM contributes the largest existential disagreement.
-# - Americas: Nagaraj.
-# - Africa: Overall amplification much lower, all contribute equally.
-# So overall there is no global problem dataset! And since they all show
-# median delta of zero everywhere, these datasets do not globally modify the
-# disagreement but create region-specific deep contradictions.
 
 ggplot(regional_amp, aes(scenario, share_strong)) +
   geom_bar(stat = "identity") +
@@ -1881,22 +1828,6 @@ frac_cells_nonid
 
 summary(dt2$tau_max_ha)
 
-# Minimum = 398 ha, the detectability threshold for 0.2. No disagreement below it.
-#
-# Median disagreement (50%) is eight times the detectability threshold (400 ha)
-# 75% of disagreeing cells exceed 2.5x detectability.
-# Half exceed 8x detectability
-
-# Even after imposing a conservative 1% rule some cells show contradictions at
-# tens of thousands of hectares; these are large irrigation landscapes, not
-# fragmented patches.
-
-# Existential contradictions occur at scales that are agronomically and
-# hydrologically meaningful and they are not confined to marginal lands. Include
-# cells where irrigation is either extensive or completely absent depending on
-# the dataset.Ddisagreement is not about "how much" irrigation exists but about
-# whether large irrigation systems exist at all in certain locations.
-
 ```
 
 ## How much irrigated land lies in disagreeement?
@@ -1937,9 +1868,6 @@ area_nonid <- rbindlist(lapply(new_dataset_names, function(d) {
 }))
 
 area_nonid
-
-# Depending on dataset, between 50-70% of all global irrigated areas
-# lie in areas where we do not even agree on whether there is irrigation at all.
 
 # How much tolerance do we need to make datasets agree?-------------------------
 
@@ -1982,29 +1910,6 @@ tau_diag <- rbindlist(lapply(new_dataset_names, function(d) {
 }))
 
 tau_diag
-
-# tau_50 ranges from 8,000 to 16,000 ha.
-# tau_80 is 25,000–40,000 ha.
-# tau90 is often 31,000–40,000 ha.
-#
-# At 0.2° resolution (40,000 ha per cell):
-# tau_50 equals 12,000–16,000 ha; that is 30–40% of the grid cell.
-# tau_90 equals 30,000–40,000 ha; most of the grid cell area.
-#
-# That means that Tto reconcile 90% of irrigated area in disagreeing cells one
-# must tolerate differences approaching the size of an entire grid cell.
-
-# area_share_1000: Under a tolerance of 1000 ha, only 0.6%–2.7% of irrigated area
-# in disagreeing cells becomes identifiable.
-
-# PARAGRAPH?
-# Area-weighted quantiles of tau_maxreveal that resolving even half of irrigated
-# area located in disagreeing cells would require tolerating discrepancies of
-# 8,000–16,000 ha. resolving 90% would require accepting differences
-# exceeding 30,000 ha in most datasets. Under a tolerance of 1,000 ha,
-# less than 3% of irrigated area in disagreeing cells becomes identifiable.
-# These values indicate that disagreement persists at scales corresponding to
-# substantial irrigation systems rather than marginal patches.
 ```
 
 # Consequences for countries
@@ -2075,27 +1980,6 @@ jaccard_results[, .(min_jaccard = min(jaccard),
                     mean_jaccard = mean(jaccard),
                     max_jaccard = max(jaccard))]
 
-# results:
-# 1: both datasets identify the same hotspots
-# 0: datasets disagree completely
-# 0.5: half overlap, half disagreement
-
-# No pair of global irrigation datasets agrees strongly on where
-# irrigation hotspots are.
-
-# Weak agreement (0.35 - 0.45):
-# -----------------------------
-# one dataset says "this is a core irrigated region",
-# the other dataset says "no, it is not".
-
-# Moderate agreement (0.5-0.65)
-# -------------------------------
-# one third to one half of hotspots do not overlap
-
-# High agreement (0.7 - 0.8)
-# -------------------------------
-# High agreement only between specific subsets because of shared lineage 
-# (GMIA and Meier; MIRCA2000 and Meier, etc)
 ```
 
 ## National rankings
@@ -2229,27 +2113,6 @@ p_topN
 
 # MERGE #########################################################################
 
-# (a) Spearman rank correlation of national total irrigated area rankings for all 
-# pairwise combinations of datasets. Black points show correlations computed across 
-# all grid cells, while red points show correlations restricted to identifiable 
-# cells (i.e., excluding cells where datasets fundamentally disagree on the 
-# presence of irrigation). Correlations are generally high (0.7–1.0), 
-# indicating broad agreement in country-level rankings. In some cases removing
-# disputed cells increases the correlation (red dot to the right of black dot), 
-# while in others it does not (red dot to the left of black dot)
-# 
-# (b) Jaccard similarity of the top 20 irrigated countries for each dataset pair. 
-# Black points again denote results using all cells and red points identifiable cells 
-# only. Most of the time focusing only on identifiable cells increases the
-# similarity; meaning that the top 20 become more similar across datasets. In other 
-# words, once disputed cells are removed there is a more coherent "core" of 
-# globally dominant irrigation countries. Possibly this is because the strongest
-# disagreement disproportionately affect marginal or mid-rank countries that
-# occassionally enter or leave the top 20 depending on dataset.
-
-# SO: removing disagreeing cells stabilizes who belongs in the top twenty, but not
-# necessarily the full ranking hierarchy across al coutnries.
-
 plot_grid(p_rankcorr, p_topN, ncol = 2, labels = "auto")
 ```
 
@@ -2283,13 +2146,6 @@ rank_shift_stats <- rank_change_clean[, .(share_ge_1  = mean(abs_shift >= 1),
                                           share_ge_50 = mean(abs_shift >= 50))]
 
 rank_shift_stats
-
-# 98.4% of country–dataset combinations change rank by at least 1 position.
-# No country keeps the same rank once we enforce identifiability.
-#
-# 90% of countries move by at least 5 rank positions
-#
-# 71% of country–dataset combinations move by 10 ranks or more
 
 # FOCUS ON THE SO-CALLED "TOP IRRIGATORS" #####################################
 
@@ -2337,27 +2193,6 @@ rank_focus_summary <- rank_focus[!is.na(rank_ident), .(median_shift = median(ran
 focus_countries <- top10_median$country
 rank_focus_summary[country %in% focus_countries]
 
-# Positive rank shift: worse rank if only confirmed cells are accounted for.
-# Negative rank shift: better rank if only confirmed cells are accounted for.
-
-# - median_shift: median of rank_shift across datasets.
-# - max_drop: maximum worsening (largest positive rank_shift).
-# - max_rise: maximum improvement (most negative rank_shift).
-# - share_drop5: share of dataset cases with rank_shift >= 5.
-# - share_drop10: share with rank_shift >= 10.
-
-# VIETNAM, BANGLADESH, THAILAND, INDONESIA: in 90% of cases, Vietnam's rank gets 
-# at least 10 places worse. Median drop is c. 40 places. Bangladesh, Indonesia, 
-# Thailand show similar pattern; median shifts of 26-27 ranks and 90% of cases 
-# with drops larger than 90 ranks.
-
-# CHINA, INDIA, PAKISTAN, USA: Global rank is invariant to whether we use all cells
-# or only agreement cells. Irrigated area dominance is robust.
-
-# ITALY, EGYPT, UZBEKISTAN, IRAQ, SPAIN, KAZAKHSTAN: they
-# improve their rank when we restrict to confirmed cells; because when we remove
-# ambiguous cells in other countries, these countries become more prominent.
-
 # Focus on the countries whose ranking drops the most --------------------------
 
 rank_focus_summary[order(-median_shift)][1:number_countries]
@@ -2384,24 +2219,6 @@ plot_shift_ranks <- rank_focus[country %in% focus_countries] %>%
   theme(legend.position = "top")
 
 plot_shift_ranks
-
-# Dashed (red) line much lower than solid (black)
-# - country drops in rank when ambiguity is removed
-# - it looks large only because of non-identifiable cells
-#
-# Red equals black
-# - rank is robust to identifiability
-# - irrigation signal is spatially coherent
-#
-# Red above black
-# - country rises in rank when ambiguity is removed
-# - it was previously masked by others’ ambiguous irrigation
-
-# If Red and black lines cross across datasets:
-# The ordering of countries changes
-# Rankings are dataset-dependent
-# There is no stable hierarchy
-# Crossings are visual proof of rank instability.
 
 ```
 
@@ -3016,18 +2833,6 @@ crop_labels <- c(
   "sugarcane" = "Sugarcane"
 )
 
-# The fraction of a crop’s total production that is excluded when requiring at 
-# least k irrigation maps to agree that the cell is irrigated, relative to the 
-# baseline where at least one map detects irrigation (k equal or greater than 1).
-
-# Question that answers: “If I require k datasets to agree, how much of the 
-# production I previously considered ‘irrigated’ disappears?”
-
-# The heatmap shows the fraction of crop production that is lost as increasingly 
-# stringent agreement is required among irrigation datasets, relative to the 
-# baseline where at least one dataset detects irrigation. This quantifies 
-# how sensitive the attribution of production to irrigation is to disagreement 
-# in irrigated-area maps.
 
 plot_heatmap <- ggplot(plot_dt, aes(k, crop, fill = loss_vs_1)) +
   geom_tile(color = "white") +
@@ -3422,7 +3227,6 @@ if (total_col == "sum_dET_m3day_areaweighted") {
 out_plot <- out_plot[k %in% 1:10]
 
 # Plot mean increase in irrigation-induced ET ----------------------------------
-# (average irrigation-induced evapotranspiration change per grid cell)
 
 plot_mean_ET <- ggplot(out_plot, aes(k, mean_dET_mmday, colour = resolution,
                                      group = resolution)) +
@@ -3436,9 +3240,6 @@ plot_mean_ET <- ggplot(out_plot, aes(k, mean_dET_mmday, colour = resolution,
   theme(legend.position = "none")
 
 # Plot total irrigation induced ET ---------------------------------------------
-# (global irrigation-induced evapotranspiration signal, obtained by integrating
-# over all retained cells; e.g., total amount of water transferred to the 
-# atmosphere per day because of irrigation)
 
 plot_total_ET <- ggplot(out_plot, aes(k, total_km3day, colour = resolution, group = resolution)) +
   geom_line() +

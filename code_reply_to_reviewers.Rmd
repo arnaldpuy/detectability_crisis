@@ -139,13 +139,13 @@ tau_tab <- data.table(
   `0.4 deg (%)` = round(100 * tau_key / cell_ha["0.4"], 2),
   `1 deg (%)`   = round(100 * tau_key / cell_ha["1"],   2))
 
-knitr::kable(tau_tab, caption = "Detectability threshold tau as a percentage of the grid-cell area at the equator. The analysis centres on tau = 1% of the cell (about 500, 2000 and 12400 ha); extreme disagreement denotes tau_max above ten times this value.")
+knitr::kable(tau_tab, caption = "Detectability threshold tau as a percentage of the grid-cell area at the equator.")
 ```
 
 ## R1.5: temporal heterogeneity does not explain the disagreement
 
 We test whether the disagreement reflects the different moments the maps
-represent. Existence of irrigation is the metric throughout (see Preliminary).
+represent. 
 
 ```{r r15_sameyear}
 
@@ -263,7 +263,7 @@ The reviewer notes that the census products map different quantities (area
 equipped, harvested area, monthly growing area). We do not compare these raw
 quantities: in `code_original_datasets` we reduce every product to its actual
 physical irrigated extent, so these magnitude differences do not enter the
-comparison. The variable used for each product is recorded below.
+comparison. 
 
 ```{r r23}
 
@@ -278,7 +278,7 @@ provenance <- data.table(
   source = c("code_original_datasets.Rmd L254", "L439, L452", "L341", "L643",
              "L382, L399", "L205"))
 
-knitr::kable(provenance, caption = "Variable extracted for each product (code_original_datasets.Rmd). Every product is reduced to its actual physical irrigated extent, so differences between area equipped, harvested area and monthly growing area do not enter the existence comparison.")
+knitr::kable(provenance, caption = "Variable extracted for each product (code_original_datasets.Rmd). Every product is reduced to its actual physical irrigated extent.")
 ```
 
 \newpage
@@ -289,8 +289,7 @@ knitr::kable(provenance, caption = "Variable extracted for each product (code_or
 
 The reviewer asks where all datasets agree on irrigation presence. We identify
 cells where all ten maps detect irrigation above the detectability threshold
-(1% of the cell, 500 ha at 0.2 deg) -- the "agreement on presence" of the
-tau_max framework -- and characterise them, including their overlap with rice
+(1% of the cell, 500 ha at 0.2 deg) and characterise them including their overlap with rice
 production (EarthStat).
 
 ```{r r32}
@@ -354,7 +353,7 @@ res <- rbindlist(lapply(ctys, function(cn) {
 
 res <- rbind(glob, res[order(-extreme_pct)])
 
-knitr::kable(res, caption = "Existential and extreme disagreement by country (0.2 deg). Existential: of the cells where at least one map detects irrigation, the percentage in which at least one map detects none. Extreme: percentage of cropland cells whose tau_max exceeds ten times the detectability threshold. Spain (the highest-drip country) is not a maximum.")
+knitr::kable(res, caption = "Existential and extreme disagreement by country (0.2 deg).")
 ```
 
 \newpage
@@ -526,14 +525,14 @@ fits_tau500 <- lca_report_fun(1L * (A > 5e-4), "tau = 500 ha (1% of cell)")
 LANID (Xie and Lark 2021; 30 m, Landsat, annual), MIrAD-US v4 (Pervez and
 Brown 2010; 250 m, MODIS anchored to USDA county statistics) and AIM-HPA
 (Deines et al. 2019; 30 m, Landsat, High Plains Aquifer) compared in 2012 and
-2017, the two years all three cover. Sources: LANID doi:10.5281/zenodo.5548555;
-MIrAD-US doi:10.5066/P9NA3EO8; AIM-HPA
-doi:10.4211/hs.a371fd69d41b4232806d81e17fe4efcb. The aggregation to the
-0.2$^\circ$ grid (warp-sum of binary irrigated pixels $\times$ pixel area:
-0.09 ha at 30 m, 6.25 ha at 250 m) is documented in the non-evaluated chunk
-below; the aggregated table ships with the repository
-(\texttt{us\_regional\_products/}). CONUS totals as a sanity check: LANID
-23.1/24.2 Mha, MIrAD 22.5/23.8 Mha (2012/2017).
+2017, the two years all three cover. Sources: 
+
+LANID doi:10.5281/zenodo.5548555
+
+MIrAD-US doi:10.5066/P9NA3EO8 
+
+AIM-HPA doi:10.4211/hs.a371fd69d41b4232806d81e17fe4efcb. 
+
 
 ```{r us_test_aggregation, eval=FALSE}
 
@@ -546,20 +545,11 @@ agg_to_ha <- function(f, irr_val, px_ha) {
   ir <- (rast(f) == irr_val) * 1.0                # binary irrigated
   project(ir, template, method = "sum") * px_ha   # pixel count x pixel area
 }
-
-# lanid2012/2017.tif: 30 m, CONUS Albers, 0/1 (Zenodo record 5548555)
-# mirad250_12/17v4.tif: 250 m, Lambert azimuthal EA, 0/1 (ScienceBase)
-# {2012,2017}_AIM-HPA_rse_finalMapBinary.tif: 30 m; 0 = NoData, 1 = irrigated,
-#   2 = not irrigated (HydroShare); validity = fraction of cell with value > 0
 ```
 
 ```{r us_test_metrics}
 
 # EXISTENTIAL DISAGREEMENT: REGIONAL PRODUCTS VS THE GLOBAL ENSEMBLE ###########
-
-# The CSV holds the product values extracted at the paper's 0.2 deg cell
-# centres for every US cropland cell, so it joins back on lon/lat exactly
-# (rounded to one decimal to be robust to floating-point noise).
 
 reg <- fread(here("us_regional_products", "us_regional_products_02.csv"))
 reg[, `:=`(lon = round(lon, 1), lat = round(lat, 1))]
@@ -568,10 +558,6 @@ us <- copy(wide[country == "United States"])
 us[, `:=`(lon = round(lon, 1), lat = round(lat, 1))]
 us <- merge(us, reg, by = c("lon", "lat"))
 stopifnot(nrow(us) == nrow(reg))
-
-# Existential: of union cells (>0 somewhere), % with at least one exact zero.
-# Strong: % of union cells where one product is 0 and another exceeds 1% of
-# the cell. Regional columns are in ha; the global maps are in Mha.
 
 exist_pct <- function(d, cols) {
   A  <- as.matrix(d[, ..cols])
@@ -613,9 +599,7 @@ knitr::kable(out, caption = "Existential disagreement (of the cells where at
              least one product records irrigation, the percentage where at
              least one records exactly zero) and strong contradictions (one
              product records zero, another exceeds 1\\% of the cell) among the
-             best US regional irrigation products, benchmarked against the ten
-             global maps over the same cells. CONUS: 17,087 US cropland cells;
-             High Plains: 1,549 cells within the AIM-HPA footprint.")
+             best US regional irrigation products.")
 
 # Directional asymmetry (mirrors the global census-vs-remote-sensing axis) -----
 
@@ -630,9 +614,6 @@ data.table(
 ```{r us_test_structure}
 
 # GEOGRAPHIC AND MAGNITUDE STRUCTURE OF THE LANID-MIRAD DISAGREEMENT ###########
-
-# Directional cells by longitude (100W = the classic humid/arid divide) and
-# the median irrigated area at stake in each direction.
 
 struct <- rbindlist(lapply(c("12", "17"), function(yr) {
   L <- us[[paste0("lanid", yr)]]; M <- us[[paste0("mirad", yr)]]
@@ -666,9 +647,6 @@ for (yr in c("12", "17"))
     pair_exist(hpa[[paste0("lanid", yr)]], hpa[[paste0("aim",   yr)]]),
     pair_exist(hpa[[paste0("mirad", yr)]], hpa[[paste0("aim",   yr)]])))
 ```
-
-The interpretation of these results is given in the manuscript (section
-"Irrigated areas are non-identifiable") and the SM (Sec. 1.7.5).
 
 \newpage
 

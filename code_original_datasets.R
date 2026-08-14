@@ -1,3 +1,8 @@
+## ----setup, include=FALSE------------------------------------------------------------------
+knitr::opts_chunk$set(echo = TRUE, dev = "pdf", cache = TRUE)
+
+
+## ----warning=FALSE, message=FALSE, results = "hide"----------------------------------------
 
 # PRELIMINARY FUNCTIONS ########################################################
 ################################################################################
@@ -32,10 +37,11 @@ if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
 
 cols_to_retrieve <- c("lon", "lat", "country", "continent", "mha", "dataset")
 
-# =============================================================================
-# MEIER ET AL.
-#   - 1 km grid; keep class 1 pixels and convert to Mha per cell
-# =============================================================================
+
+## ----meier---------------------------------------------------------------------------------
+
+# MEIER ET AL. #################################################################
+# - 1 km grid; keep class 1 pixels and convert to Mha per cell
 
 f_meier <- "./irrigated_area_datasets/meier_et_al/global_irrigated_areas.tif"
 r_meier <- rast(f_meier)
@@ -87,10 +93,11 @@ meier_dt[, sum(mha)]
 
 fwrite(meier_dt, file.path(out_dir, "meier_dt.csv"))
 
-# =============================================================================
-# GIAM (Thenkabail et al. 2009)
-#   - 30 arc-sec grid; class-based IAFs → TAAI + AIA, we use TAAI Mha
-# =============================================================================
+
+## ----giam----------------------------------------------------------------------------------
+
+# GIAM (Thenkabail et al. 2009) ################################################
+#   - 30 arc-sec grid; class-based IAFs to TAAI + AIA, we use TAAI Mha
 
 f_giam <- "./irrigated_area_datasets/giam/giam_28_classes_global.tif"
 r_giam <- rast(f_giam)
@@ -165,10 +172,12 @@ giam_dt[, sum(mha)]
 
 fwrite(giam_dt, file.path(out_dir, "giam_dt.csv"))
 
-# =============================================================================
-# GMIA v5.0 (Siebert et al.)
-#   - 5 arc-min grid; AEI × AAI% → actually irrigated Mha per cell
-# =============================================================================
+
+
+## ----gmia----------------------------------------------------------------------------------
+
+# GMIA v5.0 (Siebert et al.) ###################################################
+#   - 5 arc-min grid; AEI × AAI% = actually irrigated Mha per cell
 
 r_gmia_aei <- rast("./irrigated_area_datasets/gmia/gmia_v5_aei_ha.asc")
 gmia_dt <- as.data.table(as.data.frame(r_gmia_aei, xy = TRUE, na.rm = FALSE))
@@ -208,10 +217,12 @@ gmia_dt[, sum(mha)]
 
 fwrite(gmia_dt, file.path(out_dir, "gmia_dt.csv"))
 
-# =============================================================================
-# NAGARAJ ET AL. (2021)
+
+
+## ----nagaraj-------------------------------------------------------------------------------
+
+# NAGARAJ ET AL. (2021) ########################################################
 #   - 5 arc-min; classes → representative fractions × fixed 8604 ha per pixel
-# =============================================================================
 
 r_nag <- rast("./irrigated_area_datasets/nagaraj_et_al/v3b_combined_2015.tif")
 nagaraj_dt <- as.data.table(as.data.frame(r_nag, xy = TRUE, na.rm = FALSE))
@@ -261,10 +272,12 @@ nagaraj_dt[, sum(mha)]
 
 fwrite(nagaraj_dt, file.path(out_dir, "nagaraj_dt.csv"))
 
-# =============================================================================
-# MIRCA 2000
-#   - Maximum area equipped for irrigation per cell (ha → Mha)
-# =============================================================================
+
+
+## ----mirca_2000----------------------------------------------------------------------------
+
+# MIRCA 2000 ###################################################################
+#   - Maximum area equipped for irrigation per cell (ha to Mha)
 
 r_mirca <- rast("./irrigated_area_datasets/MIRCA_2000/MAX_CROPPED_AREA_IRC_HA.ASC")
 mirca_dt <- as.data.table(as.data.frame(r_mirca, xy = TRUE, na.rm = FALSE))
@@ -291,10 +304,11 @@ mirca_dt[, sum(mha)]
 
 fwrite(mirca_dt, file.path(out_dir, "mirca_dt.csv"))
 
-# =============================================================================
-# GAEZ+ 2015
+
+## ----gaez----------------------------------------------------------------------------------
+
+# GAEZ+ 2015 ###################################################################
 #   - Summed irrigated harvested area per cell, capped by physical cell area
-# =============================================================================
 
 gaez_files <- list.files("./irrigated_area_datasets/GAEZ+_2015",
                          pattern = "\\.tif$", full.names = TRUE)
@@ -348,10 +362,11 @@ gaez_dt[, sum(mha)]
 
 fwrite(gaez_dt, file.path(out_dir, "gaez_dt.csv"))
 
-# =============================================================================
-# SPAM 2010
+
+## ----spam2010------------------------------------------------------------------------------
+
+# SPAM 2010 ####################################################################
 #   - Sum irrigated crop areas per cell, capped by cell area (Mha)
-# =============================================================================
 
 spam_files <- list.files("./irrigated_area_datasets/SPAM_2010",pattern = "\\.tif$",
                          full.names = TRUE)
@@ -393,10 +408,11 @@ spam_dt[, sum(mha)]
 
 fwrite(spam_dt, file.path(out_dir, "spam_dt.csv"))
 
-# =============================================================================
-# GRIPC
+
+## ----gripc---------------------------------------------------------------------------------
+
+# GRIPC ########################################################################
 #   - Irrigated area per cell given directly in ha
-# =============================================================================
 
 asc_irrig <- "./irrigated_area_datasets/GRIPC/GRIPC_irrigated_area.asc"
 asc_paddy <- "./irrigated_area_datasets/GRIPC/GRIPC_paddy_area.asc"
@@ -463,9 +479,7 @@ paddy_share_dt <- data.table(
 paddy_share_dt[, country:=countrycode(country, origin = "country.name",
                                       destination = "country.name")]
 
-# -------------------------------------------------------------------
-# Raster to table
-# -------------------------------------------------------------------
+# Raster to table --------------------------------------------------------------
 
 irrig_dt <- as.data.table(as.data.frame(r_irrig, xy = TRUE, na.rm = FALSE))
 paddy_dt <- as.data.table(as.data.frame(r_paddy, xy = TRUE, na.rm = FALSE))
@@ -481,9 +495,7 @@ gripc_dt <- merge(irrig_dt, paddy_dt, by = c("lon", "lat"), all = TRUE)
 gripc_dt[is.na(irrig_non_paddy_ha), irrig_non_paddy_ha := 0]
 gripc_dt[is.na(paddy_ha), paddy_ha := 0]
 
-# -------------------------------------------------------------------
-# Countries / continents
-# -------------------------------------------------------------------
+# Countries / continents -------------------------------------------------------
 
 gripc_dt <- add_country_continent(gripc_dt, countries_sf, chunk_size = 200000L)
 gripc_dt <- gripc_dt[!is.na(country) & !is.na(continent)]
@@ -495,13 +507,7 @@ gripc_dt[country == "Lao People's Democratic Republic", country := "Lao PDR"]
 gripc_dt[country == "Taiwan, Province of China", country := "Taiwan"]
 gripc_dt[country == "Burma", country := "Myanmar"]
 
-# -------------------------------------------------------------------
-# Join country shares
-# -------------------------------------------------------------------
-
-# -------------------------------------------------------------------
-# Join country shares
-# -------------------------------------------------------------------
+# Join country shares-----------------------------------------------------------
 
 gripc_dt <- merge(gripc_dt, paddy_share_dt, by = "country", all.x = TRUE)
 
@@ -522,9 +528,7 @@ missing_paddy_countries <- unique(
 gripc_dt[continent == "Asia" & paddy_ha > 0 & is.na(paddy_irrig_share),
          paddy_irrig_share := 0.60]
 
-# -------------------------------------------------------------------
-# Compute total irrigated area
-# -------------------------------------------------------------------
+# Compute total irrigated area--------------------------------------------------
 
 gripc_dt[, irrig_paddy_ha := paddy_ha * paddy_irrig_share]
 gripc_dt[, irrig_area_ha := irrig_non_paddy_ha + irrig_paddy_ha]
@@ -545,22 +549,25 @@ gripc_dt[, `:=`(
   irrig_frac = irrig_area_ha / cell_area_ha
 )]
 
-# Final formatting
+# Final formatting -------------------------------------------------------------
+
 gripc_dt[, dataset:= "gripc"]
 gripc_dt[, mha:= irrig_area_mha]
 
 gripc_dt <- gripc_dt[, ..cols_to_retrieve]
 
-# Check global total
+# Check global total -----------------------------------------------------------
+# Original paper reports 314 Mha
 gripc_dt[, sum(mha)]
 
 # Export
 fwrite(gripc_dt, file.path(out_dir, "gripc_dt.csv"))
 
-# =============================================================================
-# MIRCA-OS (2005)
-#   - Sum irrigated crop areas per cell (Mha)
-# =============================================================================
+
+## ----mirca_os------------------------------------------------------------------------------
+
+# MIRCA-OS (2005) ##############################################################
+# - Sum irrigated crop areas per cell (Mha)
 
 mirca_os_path <- "./irrigated_area_datasets/MIRCA_OS/mirca_os_mmgag/Maximum Monthly Growing Area Grids/2005/5-arcminute"
 tif_files <- list.files(path = mirca_os_path, pattern = "\\.tif$", full.names = TRUE)
@@ -574,7 +581,7 @@ names(mirca_os_irr_ha) <- "irr_ha"
 mirca_os_dt <- as.data.table(as.data.frame(mirca_os_irr_ha, xy = TRUE, na.rm = TRUE))
 setnames(mirca_os_dt, c("x", "y", "irr_ha"), c("lon", "lat", "irr_ha"))
 
-mirca_os_dt[, mha := irr_ha / 1e6]
+mirca_os_dt[, mha:= irr_ha / 1e6]
 
 # Countries + continents -------------------------------------------------------
 
@@ -593,10 +600,11 @@ mirca_os_dt[, sum(mha)]
 
 fwrite(mirca_os_dt, file.path(out_dir, "mirca_os_dt.csv"))
 
-# =============================================================================
-# LUH2 (2015 snapshot)
+
+## ----luh2----------------------------------------------------------------------------------
+
+# LUH2 (2015 snapshot) #########################################################
 #   - Fraction irrigated crops × cell area to irrigated area per cell (Mha)
-# =============================================================================
 
 states_file <- "./irrigated_area_datasets/LUH2/multiple-states_input4MIPs_landState_ScenarioMIP_UofMD-IMAGE-ssp119-2-1-f_gn_2015-2100.nc"
 mgmt_file <- "./irrigated_area_datasets/LUH2/multiple-management_input4MIPs_landState_ScenarioMIP_UofMD-IMAGE-ssp119-2-1-f_gn_2015-2100.nc"
@@ -686,411 +694,163 @@ luh2_dt[, sum(mha)]
 
 fwrite(luh2_dt, file.path(out_dir, "luh2_dt.csv"))
 
-meier_dt <- fread("/Users/arnaldpuy/Documents/papers/detectability_irrigated_areas/code_detectability_irrigated_areas/original_datasets/meier_dt.csv")
-mirca_dt <- fread("/Users/arnaldpuy/Documents/papers/detectability_irrigated_areas/code_detectability_irrigated_areas/original_datasets/mirca_dt.csv")
 
-# MERGE ALL DATASETS AND EXPORT ################################################
+## ----export_all----------------------------------------------------------------------------
+
+# EXPORT ALL DATASETS ##########################################################
 
 # Rbind ------------------------------------------------------------------------
 
-dada<- fread("./datasets/irrigated_areas/irrigated_areas.csv")
-dada[!dataset == "gripc"] %>%
-  rbind(gripc_dt) %>%
-  fwrite("./datasets/irrigated_areas/irrigated_areas.csv")
-
-
-dada <- rbind(gaez_dt,
-              giam_dt,
-              gmia_dt,
-              gripc_dt,
-              luh2_dt,
-              meier_dt,
-              mirca_dt,
-              mirca_os_dt,
-              nagaraj_dt,
-              spam_dt)
-
-names_datasets <- unique(dada$dataset)
-dada <- dada[continent %in% c("Africa", "Americas", "Oceania", "Europe", "Asia")]
-fwrite(dada, "./datasets/irrigated_areas/irrigated_areas.csv")
-
-################################################################################
-################################################################################
-
-# EXCLUDED DATASETS AFTER PRELIMINARY ASSESSMENTS ##############################
-
-# =============================================================================
-# GirrEO
-#   - Keep only irrigation within cropland mask
-#   - Fraction irrigated × cell area (ha) → irrigated Mha per cell
-# =============================================================================
-
-# GirrEO raster ----------------------------------------------------------------
-
-girr_path <- "./irrigated_area_datasets/GirrEO/Assimila_IrrigatedAreas_candidate_EVI_idx_Global_2023_irrigation_mask_0.1666667Deg.tif"
-girr_rast <- rast(girr_path)
-
-# Cropland mask ( 1 km, 0.0089286°) --------------------------------------------
-
-# Adjust the path & layer selection to your actual file
-crop_path  <- "./irrigated_area_datasets/GirrEO/asap_mask_crop_v02.tif"
-crop_native <- rast(crop_path)
-
-# Align extent with GirrEO (y extent: -90 to 90 vs -56 to 75 in crop mask)
-# This crops the crop mask to the GirrEO extent (no change in this case for x,
-# but keeps things explicit and avoids extent mismatches).
-crop_native_aligned <- crop(crop_native, ext(girr_rast))
-
-# Resample cropland mask to GirrEO grid (nearest neighbour for categorical mask)
-crop_mask_girr <- resample(crop_native_aligned, girr_rast, method = "near")
-
-# Mask GirrEO irrigation by cropland
-# Assumption: 1 = cropland, 0 (or NA) = non-cropland.
-# We turn non-cropland (0) into NA so it’s dropped later.
-girr_rast_crop <- mask(girr_rast, crop_mask_girr, maskvalues = 0, updatevalue = NA)
-
-# -----------------------------------------------------------------------------
-# Convert to data.table
-# -----------------------------------------------------------------------------
-girr_dt <- as.data.table(as.data.frame(girr_rast_crop, xy = TRUE, na.rm = FALSE))
-setnames(girr_dt,
-         old = c("x", "y", names(girr_rast_crop)),
-         new = c("lon", "lat", "irrigated"))
-
-# Cell area (ha) ---------------------------------------------------------------
-
-cell_area_m2_girr <- cellSize(girr_rast, unit = "m")
-cell_area_ha_girr <- cell_area_m2_girr / 1e4
-
-area_dt <- as.data.table(as.data.frame(cell_area_ha_girr, xy = TRUE, na.rm = FALSE))
-setnames(area_dt, c("x", "y", names(cell_area_ha_girr)),
-         c("lon", "lat", "cell_area_ha"))
-
-setkey(girr_dt, lon, lat)
-setkey(area_dt, lon, lat)
-girr_dt <- girr_dt[area_dt]
-
-# Treat remaining NAs in 'irrigated' as zero (ocean, non-irrigated cropland, outside mask coverage)
-girr_dt[is.na(irrigated), irrigated := 0]
-
-# Irrigated area per cell ------------------------------------------------------
-
-girr_dt[, irr_ha:= irrigated * cell_area_ha]
-girr_dt[, irr_mha:= irr_ha / 1e6]
-
-# Countries + continents -------------------------------------------------------
-
-girr_dt <- add_country_continent(girr_dt, countries_sf, chunk_size = 200000L)
-girr_dt <- girr_dt[!is.na(country) & !is.na(continent)]
-
-girr_dt[, dataset := "girreo"]
-girr_dt[, mha:= irr_mha]
-
-girr_dt <- girr_dt[, ..cols_to_retrieve]
-girr_dt[, sum(mha)]
-
-# =============================================================================
-# ZOHAIB ET AL.
-#   - Binary/class-based mask; irrigated cells take full cell area (Mha)
-# =============================================================================
-
-zohaib_path <- "./irrigated_area_datasets/zohaib_et_al/global_actual_irrigated_area.tif"
-r_class <- rast(zohaib_path)
-
-# Classes:
-# 0 = non-irrigated / masked
-# 1 = SM-based, 2 = LST-based, 3 = AL-based, 4 = combined (higher confidence)
-irri_classes <- 1:4
-
-r_irri_bin <- app(r_class, fun = function(x) ifelse(x %in% irri_classes, 1, 0))
-
-cell_area_ha_zohaib <- cellSize(r_irri_bin, unit = "ha")
-
-irri_area_ha  <- r_irri_bin * cell_area_ha_zohaib
-irri_area_mha <- irri_area_ha / 1e6
-
-s_all <- c(r_class, r_irri_bin, irri_area_ha, irri_area_mha)
-names(s_all) <- c("class", "irrigated_flag", "irrigated_ha", "irrigated_mha")
-
-zohaib_dt <- as.data.table(as.data.frame(s_all, xy = TRUE, na.rm = FALSE))
-setnames(zohaib_dt, c("x", "y"), c("lon", "lat"))
-
-# Keep irrigated class 4
-# (Combined irrigated area (detected by two or more indicators) ----------------
-
-zohaib_dt <- zohaib_dt[class %in% 4]
-
-# Countries + continents -------------------------------------------------------
-
-zohaib_dt <- add_country_continent(zohaib_dt, countries_sf, chunk_size = 200000L)
-zohaib_dt <- zohaib_dt[!is.na(country) & !is.na(continent)]
-
-zohaib_dt[, dataset:= "zohaib"]
-zohaib_dt[, mha:= irrigated_mha]
-
-zohaib_dt <- zohaib_dt[, ..cols_to_retrieve]
-zohaib_dt <- na.omit(zohaib_dt)
-
-zohaib_dt[, sum(mha)]
-
-fwrite(zohaib_dt, file.path(out_dir, "zohaib_dt.csv"))
-
-# END RUNS #####################################################################
-################################################################################
-################################################################################
-
-
-# =============================================================================
-# GRIPC
-#   - Irrigated area per cell given directly in ha
-#   - Add only paddy area not already included within irrigated area
-#   - Cellwise approximation: union = max(irrigated, paddy)
-# =============================================================================
-
-
-asc_gripc_irrig <- "./irrigated_area_datasets/GRIPC/GRIPC_irrigated_area.asc"
-asc_gripc_paddy <- "./irrigated_area_datasets/GRIPC/GRIPC_paddy_area.asc"
-
-r_gripc_irrig <- rast(asc_gripc_irrig)
-r_gripc_paddy <- rast(asc_gripc_paddy)
-
-# Check geometry matches -------------------------------------------------------
-
-if (!compareGeom(r_gripc_irrig, r_gripc_paddy, stopOnError = FALSE)) {
-  stop("GRIPC irrigated-area and paddy-area rasters do not have the same geometry.")
-}
-
-# Treat missing values as zero -------------------------------------------------
-
-r_gripc_irrig[is.na(r_gripc_irrig)] <- 0
-r_gripc_paddy[is.na(r_gripc_paddy)] <- 0
-
-# Add only paddy not already included in irrigated area ------------------------
-# Cellwise union approximation:
-# irrig_total = irrig + max(paddy - irrig_overlap, 0)
-# with overlap approximated implicitly as the shared part within the cell,
-# this becomes max(irrig, paddy)
-
-r_gripc <- app(c(r_gripc_irrig, r_gripc_paddy), fun = max)
-names(r_gripc) <- "irrig_area_ha"
-
-# Raster to table --------------------------------------------------------------
-
-gripc_dt <- as.data.table(as.data.frame(r_gripc, xy = TRUE, na.rm = FALSE))
-setnames(gripc_dt, c("x", "y"), c("lon", "lat"))
-
-# Cell area (ha) for fraction (optional diagnostic) ---------------------------
-
-cell_ha_r <- cellSize(r_gripc, unit = "ha")
-gripc_dt[, cell_area_ha := values(cell_ha_r)]
-
-gripc_dt[, `:=`(
-  irrig_area_mha = irrig_area_ha / 1e6,
-  irrig_frac     = irrig_area_ha / cell_area_ha
-)]
-
-# Keep only irrigated cells ----------------------------------------------------
-
-gripc_dt <- gripc_dt[!is.na(irrig_area_ha) & irrig_area_ha > 0]
-
-# Countries + continents -------------------------------------------------------
-
-gripc_dt <- add_country_continent(gripc_dt, countries_sf, chunk_size = 200000L)
-gripc_dt <- gripc_dt[!is.na(country) & !is.na(continent)]
-
-gripc_dt[, dataset := "gripc"]
-gripc_dt[, mha := irrig_area_mha]
-
-gripc_dt <- gripc_dt[, ..cols_to_retrieve]
-
-# Check totals -----------------------------------------------------------------
-
-gripc_dt[, sum(mha)]
+irrigated_areas <- rbind(gaez_dt,
+                         giam_dt,
+                         gmia_dt,
+                         gripc_dt,
+                         luh2_dt,
+                         meier_dt,
+                         mirca_dt,
+                         mirca_os_dt,
+                         nagaraj_dt,
+                         spam_dt)
 
 # Export -----------------------------------------------------------------------
 
-fwrite(gripc_dt, file.path(out_dir, "gripc_dt.csv"))
+fwrite(irrigated_areas, "./datasets/irrigated_areas/irrigated_areas.csv")
 
 
+## ----extra_datasets, eval = FALSE, echo = FALSE--------------------------------------------
+# 
+# # =============================================================================
+# # GirrEO
+# #   - Keep only irrigation within cropland mask
+# #   - Fraction irrigated × cell area (ha) → irrigated Mha per cell
+# # =============================================================================
+# 
+# # GirrEO raster ----------------------------------------------------------------
+# 
+# girr_path <- "./irrigated_area_datasets/GirrEO/Assimila_IrrigatedAreas_candidate_EVI_idx_Global_2023_irrigation_mask_0.1666667Deg.tif"
+# girr_rast <- rast(girr_path)
+# 
+# # Cropland mask ( 1 km, 0.0089286°) --------------------------------------------
+# 
+# # Adjust the path & layer selection to your actual file
+# crop_path  <- "./irrigated_area_datasets/GirrEO/asap_mask_crop_v02.tif"
+# crop_native <- rast(crop_path)
+# 
+# # Align extent with GirrEO (y extent: -90 to 90 vs -56 to 75 in crop mask)
+# # This crops the crop mask to the GirrEO extent (no change in this case for x,
+# # but keeps things explicit and avoids extent mismatches).
+# crop_native_aligned <- crop(crop_native, ext(girr_rast))
+# 
+# # Resample cropland mask to GirrEO grid (nearest neighbour for categorical mask)
+# crop_mask_girr <- resample(crop_native_aligned, girr_rast, method = "near")
+# 
+# # Mask GirrEO irrigation by cropland
+# # Assumption: 1 = cropland, 0 (or NA) = non-cropland.
+# # We turn non-cropland (0) into NA so it’s dropped later.
+# girr_rast_crop <- mask(girr_rast, crop_mask_girr, maskvalues = 0, updatevalue = NA)
+# 
+# # -----------------------------------------------------------------------------
+# # Convert to data.table
+# # -----------------------------------------------------------------------------
+# girr_dt <- as.data.table(as.data.frame(girr_rast_crop, xy = TRUE, na.rm = FALSE))
+# setnames(girr_dt,
+#          old = c("x", "y", names(girr_rast_crop)),
+#          new = c("lon", "lat", "irrigated"))
+# 
+# # Cell area (ha) ---------------------------------------------------------------
+# 
+# cell_area_m2_girr <- cellSize(girr_rast, unit = "m")
+# cell_area_ha_girr <- cell_area_m2_girr / 1e4
+# 
+# area_dt <- as.data.table(as.data.frame(cell_area_ha_girr, xy = TRUE, na.rm = FALSE))
+# setnames(area_dt, c("x", "y", names(cell_area_ha_girr)),
+#          c("lon", "lat", "cell_area_ha"))
+# 
+# setkey(girr_dt, lon, lat)
+# setkey(area_dt, lon, lat)
+# girr_dt <- girr_dt[area_dt]
+# 
+# # Treat remaining NAs in 'irrigated' as zero (ocean, non-irrigated cropland, outside mask coverage)
+# girr_dt[is.na(irrigated), irrigated := 0]
+# 
+# # Irrigated area per cell ------------------------------------------------------
+# 
+# girr_dt[, irr_ha:= irrigated * cell_area_ha]
+# girr_dt[, irr_mha:= irr_ha / 1e6]
+# 
+# # Countries + continents -------------------------------------------------------
+# 
+# girr_dt <- add_country_continent(girr_dt, countries_sf, chunk_size = 200000L)
+# girr_dt <- girr_dt[!is.na(country) & !is.na(continent)]
+# 
+# girr_dt[, dataset := "girreo"]
+# girr_dt[, mha:= irr_mha]
+# 
+# girr_dt <- girr_dt[, ..cols_to_retrieve]
+# girr_dt[, sum(mha)]
+# 
+# # =============================================================================
+# # ZOHAIB ET AL.
+# #   - Binary/class-based mask; irrigated cells take full cell area (Mha)
+# # =============================================================================
+# 
+# zohaib_path <- "./irrigated_area_datasets/zohaib_et_al/global_actual_irrigated_area.tif"
+# r_class <- rast(zohaib_path)
+# 
+# # Classes:
+# # 0 = non-irrigated / masked
+# # 1 = SM-based, 2 = LST-based, 3 = AL-based, 4 = combined (higher confidence)
+# irri_classes <- 1:4
+# 
+# r_irri_bin <- app(r_class, fun = function(x) ifelse(x %in% irri_classes, 1, 0))
+# 
+# cell_area_ha_zohaib <- cellSize(r_irri_bin, unit = "ha")
+# 
+# irri_area_ha  <- r_irri_bin * cell_area_ha_zohaib
+# irri_area_mha <- irri_area_ha / 1e6
+# 
+# s_all <- c(r_class, r_irri_bin, irri_area_ha, irri_area_mha)
+# names(s_all) <- c("class", "irrigated_flag", "irrigated_ha", "irrigated_mha")
+# 
+# zohaib_dt <- as.data.table(as.data.frame(s_all, xy = TRUE, na.rm = FALSE))
+# setnames(zohaib_dt, c("x", "y"), c("lon", "lat"))
+# 
+# # Keep irrigated class 4
+# # (Combined irrigated area (detected by two or more indicators) ----------------
+# 
+# zohaib_dt <- zohaib_dt[class %in% 4]
+# 
+# # Countries + continents -------------------------------------------------------
+# 
+# zohaib_dt <- add_country_continent(zohaib_dt, countries_sf, chunk_size = 200000L)
+# zohaib_dt <- zohaib_dt[!is.na(country) & !is.na(continent)]
+# 
+# zohaib_dt[, dataset:= "zohaib"]
+# zohaib_dt[, mha:= irrigated_mha]
+# 
+# zohaib_dt <- zohaib_dt[, ..cols_to_retrieve]
+# zohaib_dt <- na.omit(zohaib_dt)
+# 
+# zohaib_dt[, sum(mha)]
+# 
+# fwrite(zohaib_dt, file.path(out_dir, "zohaib_dt.csv"))
 
 
+## ----session_information-------------------------------------------------------------------
 
+# SESSION INFORMATION ##########################################################
 
+sessionInfo()
 
+## Return the machine CPU -----------------------------------------------------
 
+cat("Machine:     "); print(benchmarkme::get_cpu()$model_name)
 
+## Return number of true cores -------------------------------------------------
 
+cat("Num cores:   "); print(parallel::detectCores(logical = FALSE))
 
+## Return number of threads ---------------------------------------------------
 
-library(terra)
-library(data.table)
-
-# -------------------------------------------------------------------
-# Inputs
-# -------------------------------------------------------------------
-
-asc_irrig <- "./irrigated_area_datasets/GRIPC/GRIPC_irrigated_area.asc"
-asc_paddy <- "./irrigated_area_datasets/GRIPC/GRIPC_paddy_area.asc"
-
-r_irrig <- rast(asc_irrig)
-r_paddy <- rast(asc_paddy)
-
-if (!compareGeom(r_irrig, r_paddy, stopOnError = FALSE)) {
-  stop("GRIPC irrigated and paddy rasters do not have matching geometry.")
-}
-
-r_irrig[is.na(r_irrig)] <- 0
-r_paddy[is.na(r_paddy)] <- 0
-
-# -------------------------------------------------------------------
-# Country-level paddy irrigation shares reconstructed from
-# Huke & Huke (1997), page 47 summary table
-# share = (irrigated wet + irrigated dry) / total rice area
-# -------------------------------------------------------------------
-
-paddy_share_dt <- data.table(
-  country = c(
-    "India",
-    "China",
-    "Indonesia",
-    "Bangladesh",
-    "Thailand",
-    "Vietnam",
-    "Myanmar",
-    "Philippines",
-    "Pakistan",
-    "Cambodia",
-    "Nepal",
-    "South Korea",
-    "Sri Lanka",
-    "North Korea",
-    "Malaysia",
-    "Lao PDR",
-    "Taiwan",
-    "Bhutan"
-  ),
-  paddy_irrig_share = c(
-    (15537 + 4123) / 42516,
-    (20490 + 9146) / 32125,
-    (2963 + 2963) / 11015,
-    (351 + 2267) / 10679,
-    (274 + 665) / 9644,
-    (1630 + 1630) / 6375,
-    (1812 + 1386) / 6285,
-    (1175 + 1029) / 3620,
-    min(1, (2125 + 0) / 2124),   # cap because of rounding in source
-    (140 + 165) / 1899,
-    (706 + 24) / 1488,
-    (776 + 0) / 1103,
-    (377 + 251) / 867,
-    (456 + 0) / 680,
-    (228 + 210) / 668,
-    (33 + 11) / 611,
-    min(1, (133 + 133) / 266),
-    (5 + 0) / 26
-  )
-)
-
-paddy_share_dt[, country:=countrycode(country, origin = "country.name",
-                                      destination = "country.name")]
-
-# -------------------------------------------------------------------
-# Raster to table
-# -------------------------------------------------------------------
-
-irrig_dt <- as.data.table(as.data.frame(r_irrig, xy = TRUE, na.rm = FALSE))
-paddy_dt <- as.data.table(as.data.frame(r_paddy, xy = TRUE, na.rm = FALSE))
-
-setnames(irrig_dt, c("x", "y", names(irrig_dt)[3]),
-         c("lon", "lat", "irrig_non_paddy_ha"))
-
-setnames(paddy_dt, c("x", "y", names(paddy_dt)[3]),
-         c("lon", "lat", "paddy_ha"))
-
-gripc_dt <- merge(irrig_dt, paddy_dt, by = c("lon", "lat"), all = TRUE)
-
-gripc_dt[is.na(irrig_non_paddy_ha), irrig_non_paddy_ha := 0]
-gripc_dt[is.na(paddy_ha), paddy_ha := 0]
-
-# -------------------------------------------------------------------
-# Countries / continents
-# -------------------------------------------------------------------
-
-gripc_dt <- add_country_continent(gripc_dt, countries_sf, chunk_size = 200000L)
-gripc_dt <- gripc_dt[!is.na(country) & !is.na(continent)]
-
-# Harmonize names if needed
-gripc_dt[country == "Korea, Republic of", country := "South Korea"]
-gripc_dt[country == "Korea, Democratic People's Republic of", country := "North Korea"]
-gripc_dt[country == "Lao People's Democratic Republic", country := "Lao PDR"]
-gripc_dt[country == "Taiwan, Province of China", country := "Taiwan"]
-gripc_dt[country == "Burma", country := "Myanmar"]
-
-# -------------------------------------------------------------------
-# Join country shares
-# -------------------------------------------------------------------
-
-# -------------------------------------------------------------------
-# Join country shares
-# -------------------------------------------------------------------
-
-gripc_dt <- merge(gripc_dt, paddy_share_dt, by = "country", all.x = TRUE)
-
-# If there is no paddy in the cell, the share is irrelevant
-gripc_dt[paddy_ha == 0 & is.na(paddy_irrig_share), paddy_irrig_share := 0]
-
-# Following Salmon et al.:
-# for non-Asian countries with paddy but no country-specific value, use 0.60
-gripc_dt[continent != "Asia" & paddy_ha > 0 & is.na(paddy_irrig_share),
-         paddy_irrig_share := 0.60]
-
-# Check only countries that actually have paddy area
-missing_paddy_countries <- unique(
-  gripc_dt[paddy_ha > 0 & is.na(paddy_irrig_share), country]
-)
-
-# Other countries, 0.60 -
-gripc_dt[continent == "Asia" & paddy_ha > 0 & is.na(paddy_irrig_share),
-         paddy_irrig_share := 0.60]
-
-# -------------------------------------------------------------------
-# Compute total irrigated area
-# -------------------------------------------------------------------
-
-gripc_dt[, irrig_paddy_ha := paddy_ha * paddy_irrig_share]
-gripc_dt[, irrig_area_ha := irrig_non_paddy_ha + irrig_paddy_ha]
-
-# Cell area raster -------------------------------------------------------------
-
-cell_ha_r <- cellSize(r_irrig, unit = "ha")
-
-cell_dt <- as.data.table(as.data.frame(cell_ha_r, xy = TRUE, na.rm = FALSE))
-setnames(cell_dt, c("x", "y", names(cell_dt)[3]), c("lon", "lat", "cell_area_ha"))
-
-# Join to gripc_dt -------------------------------------------------------------
-
-gripc_dt <- merge(gripc_dt, cell_dt, by = c("lon", "lat"), all.x = TRUE)
-
-gripc_dt[, `:=`(
-  irrig_area_mha = irrig_area_ha / 1e6,
-  irrig_frac = irrig_area_ha / cell_area_ha
-)]
-
-# Final formatting
-gripc_dt[, dataset:= "gripc"]
-gripc_dt[, mha:= irrig_area_mha]
-
-gripc_dt <- gripc_dt[, ..cols_to_retrieve]
-
-# Check global total
-gripc_dt[, sum(mha)]
-
-# Export
-fwrite(gripc_dt, file.path(out_dir, "gripc_dt.csv"))
-
-
-
-
-
-
+cat("Num threads: "); print(parallel::detectCores(logical = FALSE))
 

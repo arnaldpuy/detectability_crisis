@@ -150,12 +150,6 @@ if (CLAMP_TO_01_OLD) f_ll02 <- clamp01(f_ll02)
 
 # REPROJECT VIA EQUAL-AREA: OPERATOR TEST (bilinear vs near) ###################
 
-# Why do we check two operators?
-#   We want to quantify how much smoothing vs non-smoothing interpolation changes:
-#   - totals (before renormalization)
-#   - threshold classification (flip/prevalence)
-#   - downstream disagreement curves
-
 # The bilinear operator --------------------------------------------------------
 
 rt_old_bilin <- run_old_roundtrip(f_ll02 = f_ll02,
@@ -176,7 +170,6 @@ mha_ll02_target_bilin <- rt_old_bilin$mha
 mha_ll02_target_near <- rt_old_near$mha
 
 # Quality assessment: total conservation (before renormalization) --------------
-# We want to see the raw "mass loss/gain" introduced by the projection pipeline.
 
 tot_before <- global(mha_stack_ll_02, "sum", na.rm = TRUE)[, 1]
 tot_bilin <- global(mha_ll02_target_bilin, "sum", na.rm = TRUE)[, 1]
@@ -191,10 +184,6 @@ tot_check <- data.table(dataset = names(mha_stack_ll_02),
 print(tot_check)
 
 # Renormalize both operators to match original totals exactly ------------------
-
-# This step makes totals conservation exact and is a protection against
-# the criticism that our reprojection changed totals and this is what
-# explains the disagreement between cells
 
 mha_ll02_target_bilin_cons <- renormalize_to_totals(mha_ll02_target_bilin, mha_stack_ll_02)
 mha_ll02_target_near_cons  <- renormalize_to_totals(mha_ll02_target_near,  mha_stack_ll_02)
@@ -221,8 +210,6 @@ mha_ll02_target <- mha_ll02_target_near_cons # MAIN
 mha_ll02_target_sens_bilin <- mha_ll02_target_bilin_cons # SENSITIVITY
 
 #Quality assessment threshold stability (before vs after) for BOTH operators ---
-# We quantify whether harmonization changes binary classification at 
-# key tau values.
 
 tau_set <- c(0, 100, 1000)
 
@@ -272,8 +259,6 @@ fwrite(prev_old_near,  "./datasets/irrigated_areas_regridded/QA_prevalence_chang
 res(mha_ll02_target)
 
 # Verify totals after full round-trip vs ORIGINAL dt totals --------------------
-# Another reviewer-proof check: final harmonized rasters still match 
-# original totals.
 
 ll02_target_totals <- data.table(dataset = names(mha_ll02_target),
                                  total_mha_ll02_target = global(mha_ll02_target, 
@@ -314,9 +299,7 @@ setnames(irrigated_areas_regridded_02, c("x", "y"), c("lon", "lat"))
 
 # AGGREGATE TO 0.4° ############################################################
 
-# Spatial aggregation is a conservative robustness test: it reduces fine-scale
-# misalignment/noise so disagreement persisting at coarser scales is 
-# harder to dismiss. fact=2 maps 0.2° to 0.4°; summing preserves total irrigated area.
+# fact=2 maps 0.2° to 0.4°; summing preserves total irrigated area.
 
 mha_stack_ll_04 <- aggregate(mha_ll02_target, fact = 2, fun = sum, na.rm = TRUE)
 res(mha_stack_ll_04)
@@ -344,9 +327,6 @@ setnames(irrigated_areas_regridded_04, c("x", "y"), c("lon", "lat"))
 
 # AGGREGATE TO 1° ##############################################################
 
-# Even stronger conservative scale; if disagreement persists at 1°, it is not a
-# fine-resolution alignment artefact. fact=5 maps 0.2° to 1°.
-
 mha_stack_ll_10 <- aggregate(mha_ll02_target, fact = 5, fun = sum, na.rm = TRUE)
 res(mha_stack_ll_10)
 
@@ -370,9 +350,6 @@ irrigated_areas_regridded_10 <- as.data.table(
 setnames(irrigated_areas_regridded_10, c("x", "y"), c("lon", "lat"))
 
 # ADD COUNTRIES + CONTINENT AND EXPORT #########################################
-# This step enables regional summaries and continent/country decomposition of 
-# disagreement. drop_all_zero_or_na_cells() reduces file size and speeds 
-# later computations by removing cells that contain no irrigation in all datasets.
 
 # 0.2° -------------------------------------------------------------------------
 
@@ -417,38 +394,6 @@ fwrite(irrigated_areas_regridded_10,
 ```{r change_disagreement_curves, dependson="harmonization"}
 
 # DOES HARMONIZATION CHANGE THE DISAGREEMENT CURVES? ###########################
-#
-# The main results of the paper are disagreement curves: the fraction of grid
-# cells that disagree on irrigation presence as a function of the detectability
-# threshold tau, together with their decomposition into existential vs marginal,
-# minor vs major disagreement, etc.
-#
-# Even if we have shown that:
-#   - global irrigated-area totals are conserved, and
-#   - irrigation prevalence is stable under nearest-neighbour reprojection,
-# this does not automatically guarantee that the shape of the disagreement
-# curves is unaffected by harmonization.
-#
-# In this QA we therefore explicitly test whether the harmonization step
-# (reprojection + resampling) biases disagreement metrics across tau by:
-#   1) computing disagreement curves on:
-#        (a) the baseline aligned 0.2° stack (mha_stack_ll_02),
-#       (b) the nearest-neighbour round-trip, renormalized (mha_ll02_target_near_cons),
-#      (c) the bilinear round-trip, renormalized (mha_ll02_target_bilin_cons);
-#   2) comparing curves (b) and (c) against the baseline across the full tau grid;
-#   3) summarizing for each key metric the maximum absolute change across tau.
-#
-# If near_minus_base deltas are c. 0 for all tau, harmonization does not distort
-# disagreement results. If bilin_minus_base deltas are large at low tau, this
-# indicates that bilinear smoothing inflates the spatial footprint of small
-# irrigation signals and artificially increases disagreement near the detection
-# limit.
-
-# DEFINE THE SAME TAU GRID USED IN THE ANALYSIS ################################
-
-# Define a dense grid of tau values (in ha) from 1 ha (10^0) to 1e5 ha (10^5),
-# on a log10 scale with step 0.1. tau = 0 (label "any_positive") is added to
-# represent the "any non-zero irrigation" case used in the main analysis.
 
 log_tau_min <- 0
 log_tau_max <- 5
@@ -468,15 +413,11 @@ tau_grid <- data.table(tau_label = tau_labels,
 
 # RELOAD PRODUCTS FOR THE QUALITY CHECK ########################################
 
-# Reload from disk to avoid invalid external pointers during knitting.
-
 mha_stack_ll_02 <- rast("mha_stack_ll_02_baseline.tif")
 mha_ll02_target_near_cons <- rast("mha_stack_ll_02_aligned_NEAR.tif")
 mha_ll02_target_bilin_cons <- rast("mha_stack_ll_02_aligned_BILIN.tif")
 
 # Build disagreement curves for each product -----------------------------------
-# compute_curve_from_stack() applies the tau-based classification and disagreement
-# metrics used in the main analysis, returning e.g. frac_disagree(tau), etc.
 
 curve_base <- compute_curve_from_stack(mha_stack_ll_02, tau_grid) %>%
   .[, product:= "base_ll02"]
@@ -491,11 +432,6 @@ curves <- rbindlist(list(curve_base, curve_near, curve_bilin), use.names = TRUE)
 setorder(curves, product, tau_mha)
 
 # Compute deltas vs baseline for key metrics -----------------------------------
-
-# For each tau and metric, we compute:
-#   $\Delta$_near(tau)  = metric_near(tau)  - metric_base(tau)
-#   $\Delta$_bilin(tau) = metric_bilin(tau) - metric_base(tau)
-# A robust harmonization should give $\Delta$_near(tau) = 0 for all tau.
 
 metrics <- c("frac_disagree", "frac_existence", "frac_marginal",
              "frac_minor_disagree", "frac_major_disagree",
@@ -528,9 +464,6 @@ delta_bilin[, comparison:= "bilin_minus_base"]
 delta_all <- rbindlist(list(delta_near, delta_bilin), use.names = TRUE, fill = TRUE)
 
 # Summarize worst-case changes across tau for headline metrics -------------------
-# For the key metrics (frac_disagree, frac_existence, frac_marginal), we
-# extract, for each comparison, the tau at which |$\Delta$(tau)| is largest and the
-# corresponding $\Delta$(tau). This yields a compact "worst-case impact" summary.
 
 summary_near <- rbindlist(lapply(
   c("frac_disagree", "frac_existence", "frac_marginal"),
@@ -545,16 +478,6 @@ summary_bilin <- rbindlist(lapply(
 delta_summary <- rbindlist(list(summary_near, summary_bilin), use.names = TRUE)
 setorder(delta_summary, comparison, metric)
 
-# Interpretation:
-#   - If near_minus_base deltas are ~0 for all tau (and max |$\Delta$| is O(10^-3) or less),
-#     the disagreement analysis is robust to nearest-neighbour harmonization.
-#   - If bilin_minus_base deltas are large at low tau (especially tau = 0), bilinear
-#     interpolation artificially inflates the footprint of small irrigation values
-#     and increases disagreement near the detection limit.
-
-# Nearest-neighbour harmonization does not alter the disagreement curves in 
-# any meaningful way and that is why we have used nearest-neighbour as the 
-# interpolation in the main analysis - disagreement is not an harmonization effect.
 print(delta_summary)
 
 # Save tables for supplementary materials --------------------------------------
